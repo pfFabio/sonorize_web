@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/sonorize-web/static/css/main.37cf57d1.css",
+    "main.js": "/sonorize-web/static/js/main.c0595cd8.js",
+    "static/js/453.e58636ee.chunk.js": "/sonorize-web/static/js/453.e58636ee.chunk.js",
+    "index.html": "/sonorize-web/index.html",
+    "main.37cf57d1.css.map": "/sonorize-web/static/css/main.37cf57d1.css.map",
+    "main.c0595cd8.js.map": "/sonorize-web/static/js/main.c0595cd8.js.map",
+    "453.e58636ee.chunk.js.map": "/sonorize-web/static/js/453.e58636ee.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.37cf57d1.css",
+    "static/js/main.c0595cd8.js"
+  ]
+}
