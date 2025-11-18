@@ -1,15 +1,13 @@
 import React, { useState, useRef } from "react";
-// import { View, Text, TouchableOpacity, TextInput, Alert, ActivityIndicator } from "react-native"; // Removido
-// import { Audio } from "expo-av"; // Removido
-// import * as FileSystem from "expo-file-system"; // Removido
-// import { uploadAndTranscribeAudio, getTranscriptionStatus } from "../api"; // Caminho atualizado
-// import styles from "../styles"; // Usaremos estilos inline ou CSS
+import jsPDF from "jspdf";
+
 
 export default function RecordScreen() {
   const [isRecording, setIsRecording] = useState(false);
   const [lastRecordingUri, setLastRecordingUri] = useState(null);
   const [transcript, setTranscript] = useState("");
   const [liveTranscript, setLiveTranscript] = useState("");
+  const [showSaveOptions, setShowSaveOptions] = useState(false);
 
   // Refs para a API de gravação do navegador
   const mediaRecorderRef = useRef(null);
@@ -39,7 +37,6 @@ export default function RecordScreen() {
         const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
         const audioUrl = URL.createObjectURL(audioBlob);
         setLastRecordingUri(audioUrl);
-        setTranscript(liveTranscript); // Salva a transcrição ao vivo final
 
         // Para a stream do microfone
         stream.getTracks().forEach(track => track.stop());
@@ -80,6 +77,8 @@ export default function RecordScreen() {
       setLiveTranscript(finalTranscript + interimTranscript);
     };
 
+
+
     speechRecognitionRef.current.start();
   }
 
@@ -102,37 +101,65 @@ export default function RecordScreen() {
   // Parar gravação
   async function stopRecording() {
     if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
       if (isSpeechRecognitionSupported) {
+        setTranscript(liveTranscript);
         stopLiveTranscription();
       }
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
     }
   }
 
-  // Salvar transcrição como arquivo .txt
-  async function saveTranscript() {
-    const textToSave = transcript || liveTranscript;
-    if (!textToSave) {
-      window.alert("Nada para salvar", "Grave algo primeiro.");
-      return;
-    }
-
+  // Função genérica para salvar arquivos de texto (TXT, CSV)
+  const saveAsTextFile = (content, filename) => {
     try {
-      const blob = new Blob([textToSave], { type: 'text/plain' });
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'transcricao.txt';
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      window.alert("Salvo!", `O download de 'transcricao.txt' deve ter começado.`);
     } catch (err) {
-      console.error("Erro ao salvar arquivo:", err);
+      console.error("Erro ao salvar arquivo de texto:", err);
       window.alert("Erro", "Não foi possível salvar o arquivo.");
     }
+  };
+
+  // Função para salvar como PDF
+  const saveAsPdf = (content, filename) => {
+    const doc = new jsPDF();
+    // A função splitTextToSize quebra o texto em linhas para que ele não saia da página.
+    const lines = doc.splitTextToSize(content, 180); // 180 é a largura máxima em mm
+    doc.text(lines, 10, 10);
+    doc.save(filename);
+  };
+
+  // Manipulador principal de salvamento que decide o que fazer com base no formato
+  const handleSave = (format) => {
+    const textToSave = transcript || liveTranscript;
+    if (!textToSave) {
+      window.alert("Nada para salvar");
+      return;
+    }
+
+    switch (format) {
+      case 'txt':
+        saveAsTextFile(textToSave, 'transcricao.txt');
+        break;
+      case 'pdf':
+        saveAsPdf(textToSave, 'transcricao.pdf');
+        break;
+      case 'csv':
+        const csvContent = `"${textToSave.replace(/"/g, '""')}"`; // Escapa aspas e envolve o texto
+        saveAsTextFile(csvContent, 'transcricao.csv');
+        break;
+      default:
+        console.error("Formato de arquivo desconhecido:", format);
+    }
+    setShowSaveOptions(false); // Fecha o modal após o download
   }
 
   const toggleRecording = () => {
@@ -148,6 +175,7 @@ export default function RecordScreen() {
     <div style={styles.card}>
       <p style={styles.title}>
         {isRecording ? "Gravando..." : "Pressione o botão para gravar"}
+
       </p>
 
       <button
@@ -178,7 +206,8 @@ export default function RecordScreen() {
 
       {lastRecordingUri && (
         <div style={{ marginTop: 20 }}>
-          <p style={styles.subtitle}>Última gravação</p>
+          <p style={styles.subtitle}>Última gravação</p>{" "}
+          {/* Adicionado espaço para consistência visual */}
           <audio src={lastRecordingUri} controls />
         </div>
       )}
@@ -192,9 +221,10 @@ export default function RecordScreen() {
             value={transcript}
             onChange={(e) => setTranscript(e.target.value)}
           />
+          {/* O botão de salvar agora abre o modal */}
           <button
             style={{ ...styles.button, marginTop: 10 }}
-            onClick={saveTranscript}
+            onClick={() => setShowSaveOptions(true)}
           >
             💾 Salvar
           </button>
@@ -213,6 +243,27 @@ export default function RecordScreen() {
           >
             🗑️ Limpar
           </button>
+        </div>
+      )}
+
+      {/* Modal de Opções de Salvamento */}
+      {showSaveOptions && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalContent}>
+            <p style={styles.modalTitle}>Escolha o formato para salvar</p>
+            <button style={styles.modalButton} onClick={() => handleSave('txt')}>
+              Salvar como .txt
+            </button>
+            <button style={styles.modalButton} onClick={() => handleSave('pdf')}>
+              Salvar como .pdf
+            </button>
+            <button style={styles.modalButton} onClick={() => handleSave('csv')}>
+              Salvar como .csv
+            </button>
+            <button style={{...styles.modalButton, backgroundColor: '#6c757d', marginTop: 20}} onClick={() => setShowSaveOptions(false)}>
+              Cancelar
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -242,5 +293,31 @@ const styles = {
     textAlign: 'left',
     fontFamily: 'sans-serif',
     fontSize: 16,
-  }
+  },
+  // Estilos para o Modal
+  modalOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    padding: '20px 40px',
+    borderRadius: 10,
+    boxShadow: '0 5px 15px rgba(0,0,0,0.3)',
+    textAlign: 'center',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+
 };
