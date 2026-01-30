@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 // import { View, Text, ... } from "react-native"; // Removido
 // import Voice from "@react-native-voice/voice"; // Removido
+import { handleSave as saveTranscript } from "./fileSaver";
 
 // A prop 'route' é simulada passando as props diretamente
 export default function TranscriptScreen({ route }) {
   const [recognizedText, setRecognizedText] = useState("");
+  const [showSaveOptions, setShowSaveOptions] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef(null);
   const textAreaRef = useRef(null);
@@ -94,6 +96,12 @@ export default function TranscriptScreen({ route }) {
     }
   };
 
+  // Manipulador para salvar a transcrição
+  const handleSave = (format) => {
+    saveTranscript(recognizedText, format);
+    setShowSaveOptions(false); // Fecha o modal após o download
+  };
+
   return (
     <div style={styles.container}>
       <h2 style={styles.title}>
@@ -115,6 +123,36 @@ export default function TranscriptScreen({ route }) {
         >
           {isListening ? "Parar" : "Iniciar"}
         </button>
+      )}
+
+      {staticTranscription && (
+        <button
+          style={{ ...styles.startButton, backgroundColor: "#007bff" }}
+          onClick={() => setShowSaveOptions(true)}
+        >
+          💾 Salvar Transcrição
+        </button>
+      )}
+
+      {/* Modal de Opções de Salvamento */}
+      {showSaveOptions && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalContent}>
+            <p style={styles.modalTitle}>Escolha o formato para salvar</p>
+            <button style={styles.modalButton} onClick={() => handleSave('txt')}>
+              Salvar como .txt
+            </button>
+            <button style={styles.modalButton} onClick={() => handleSave('pdf')}>
+              Salvar como .pdf
+            </button>
+            <button style={styles.modalButton} onClick={() => handleSave('csv')}>
+              Salvar como .csv
+            </button>
+            <button style={{...styles.modalButton, backgroundColor: '#6c757d', marginTop: 20}} onClick={() => setShowSaveOptions(false)}>
+              Cancelar
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -153,4 +191,32 @@ const styles = {
     cursor: 'pointer',
     border: 'none',
   },
+  // Estilos para o Modal
+  modalOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    padding: '20px 40px',
+    borderRadius: 10,
+    boxShadow: '0 5px 15px rgba(0,0,0,0.3)',
+    textAlign: 'center',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  modalButton: {
+    backgroundColor: '#007bff', color: 'white', padding: '10px 20px', border: 'none', borderRadius: 5, fontSize: 16, cursor: 'pointer', margin: '5px 0', width: '100%'
+  }
 };

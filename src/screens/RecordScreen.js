@@ -1,6 +1,5 @@
 import React, { useState, useRef } from "react";
-import jsPDF from "jspdf";
-
+import { handleSave as saveTranscript } from "./fileSaver";
 
 export default function RecordScreen() {
   const [isRecording, setIsRecording] = useState(false);
@@ -110,57 +109,12 @@ export default function RecordScreen() {
     }
   }
 
-  // Função genérica para salvar arquivos de texto (TXT, CSV)
-  const saveAsTextFile = (content, filename) => {
-    try {
-      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("Erro ao salvar arquivo de texto:", err);
-      window.alert("Erro", "Não foi possível salvar o arquivo.");
-    }
-  };
-
-  // Função para salvar como PDF
-  const saveAsPdf = (content, filename) => {
-    const doc = new jsPDF();
-    // A função splitTextToSize quebra o texto em linhas para que ele não saia da página.
-    const lines = doc.splitTextToSize(content, 180); // 180 é a largura máxima em mm
-    doc.text(lines, 10, 10);
-    doc.save(filename);
-  };
-
   // Manipulador principal de salvamento que decide o que fazer com base no formato
   const handleSave = (format) => {
     const textToSave = transcript || liveTranscript;
-    if (!textToSave) {
-      window.alert("Nada para salvar");
-      return;
-    }
-
-    switch (format) {
-      case 'txt':
-        saveAsTextFile(textToSave, 'transcricao.txt');
-        break;
-      case 'pdf':
-        saveAsPdf(textToSave, 'transcricao.pdf');
-        break;
-      case 'csv':
-        const csvContent = `"${textToSave.replace(/"/g, '""')}"`; // Escapa aspas e envolve o texto
-        saveAsTextFile(csvContent, 'transcricao.csv');
-        break;
-      default:
-        console.error("Formato de arquivo desconhecido:", format);
-    }
+    saveTranscript(textToSave, format);
     setShowSaveOptions(false); // Fecha o modal após o download
-  }
+  };
 
   const toggleRecording = () => {
     if (isRecording) {
@@ -319,5 +273,7 @@ const styles = {
     fontWeight: 'bold',
     marginBottom: 20,
   },
-
+  modalButton: {
+    backgroundColor: '#007bff', color: 'white', padding: '10px 20px', border: 'none', borderRadius: 5, fontSize: 16, cursor: 'pointer', margin: '5px 0', width: '100%'
+  },
 };

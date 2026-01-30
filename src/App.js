@@ -41,7 +41,6 @@ function App() {
       </main>
       <nav className="app-nav">
         <button onClick={() => navigateTo('Home')}>Home</button>
-        <button onClick={() => navigateTo('Gravação')}>Gravação</button>
         <button onClick={() => navigateTo('Configurações')}>Configurações</button>
       </nav>
     </div>

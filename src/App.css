@@ -6,17 +6,20 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: #e9ecef;
+  width: 100%;
 }
 
 .app-container {
+  width: 50%;
   display: flex;
   flex-direction: column;
-  max-width: 800px;
+  align-items: center;
   margin: 0 auto;
   padding: 20px;
 }
 
 .app-nav {
+  width: 50%;
   display: flex;
   justify-content: center;
   gap: 10px;
@@ -28,6 +31,7 @@ body {
 }
 
 .app-nav button {
+  width: auto;
   padding: 10px 15px;
   border: 1px solid #007bff;
   background-color: #fff;
