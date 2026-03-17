@@ -6,10 +6,11 @@ import HomeScreen from './screens/Home';
 import RecordScreen from './screens/RecordScreen';
 import TranscriptScreen from './screens/TranscriptScreen';
 import SettingsScreen from './screens/SettingsScreen';
+import LoginScreen from './screens/LoginScreen';
 
 function App() {
   // Estado para controlar a tela atual e seus parâmetros
-  const [currentScreen, setCurrentScreen] = useState({ name: 'Home', params: {} });
+  const [currentScreen, setCurrentScreen] = useState({ name: 'Login', params: {} });
 
   // Função para "navegar" entre as telas
   const navigateTo = (screenName, params = {}) => {
@@ -19,6 +20,8 @@ function App() {
   // Função para renderizar a tela correta
   const renderScreen = () => {
     switch (currentScreen.name) {
+      case 'Login':
+        return <LoginScreen navigateTo={navigateTo} />;
       case 'Gravação':
         // A tela de gravação não precisa de parâmetros especiais por enquanto
         return <RecordScreen />;
@@ -39,10 +42,12 @@ function App() {
       <main className="app-main">
         {renderScreen()}
       </main>
-      <nav className="app-nav">
-        <button onClick={() => navigateTo('Home')}>Home</button>
-        <button onClick={() => navigateTo('Configurações')}>Configurações</button>
-      </nav>
+      {currentScreen.name !== 'Login' && (
+        <nav className="app-nav">
+          <button onClick={() => navigateTo('Home')}>Home</button>
+          <button onClick={() => navigateTo('Configurações')}>Configurações</button>
+        </nav>
+      )}
     </div>
   );
 }
