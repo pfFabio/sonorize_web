@@ -1,22 +1,45 @@
 import React, { useState } from "react";
-import usersData from "../users.json";
-
+// import usersData from "../users.json"; // Removido, agora usaremos a API
+import { supabase } from "../supabaseClient"; // Importa o cliente Supabase
+ 
 export default function LoginScreen({ navigateTo }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
+    setIsLoading(true);
+ 
+    try {
+      // Tenta fazer login com e-mail e senha usando o Supabase
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password,
+      });
+ 
+      if (error) {
+        // Se houver um erro do Supabase, lança-o
+        throw error;
+      }
+ 
+      if (data.user) {
+        // Login bem-sucedido, o token é gerenciado automaticamente pelo Supabase
+        // e o usuário está disponível em data.user
+        console.log("Usuário logado:", data.user);
+        navigateTo("Home"); // Navega para a home em caso de sucesso
+      }
+      
+      // Salva o token no localStorage para ser usado em outras requisições
+      localStorage.setItem('authToken', data.access_token);
+      navigateTo("Home"); // Navega para a home em caso de sucesso
 
-    // Busca no JSON um usuário que tenha exatamente o mesmo e-mail e senha
-    const validUser = usersData.find((user) => user.email === email && user.password === password);
-
-    if (validUser) {
-      navigateTo("Home");
-    } else {
-      setError("E-mail ou senha incorretos.");
+    } catch (err) {
+      setError(err.message || "Erro desconhecido ao fazer login.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -53,15 +76,19 @@ export default function LoginScreen({ navigateTo }) {
             />
           </div>
 
-          <button type="submit" style={styles.button}>
-            Entrar
+          <button 
+            type="submit" 
+            style={isLoading ? styles.disabledButton : styles.button} 
+            disabled={isLoading}
+          >
+            {isLoading ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
 
         <div style={styles.footer}>
           <p style={styles.footerText}>
             Ainda não tem uma conta?{" "}
-            <span style={styles.link} onClick={() => alert("Redirecionando para tela de cadastro...")}>
+            <span style={styles.link} onClick={() => navigateTo("Register")}>
               Cadastre-se
             </span>
           </p>
@@ -101,6 +128,7 @@ const styles = {
   },
   errorText: { color: "red", marginBottom: 15, fontSize: 14, fontWeight: "bold" },
   button: { backgroundColor: "#007bff", color: "white", padding: "15px", border: "none", borderRadius: 8, fontSize: 18, fontWeight: "bold", cursor: "pointer", marginTop: 10 },
+  disabledButton: { backgroundColor: "#6c757d", color: "white", padding: "15px", border: "none", borderRadius: 8, fontSize: 18, fontWeight: "bold", cursor: "not-allowed", marginTop: 10 },
   footer: { marginTop: 25 },
   footerText: { fontSize: 14, color: "#666" },
   link: { color: "#007bff", fontWeight: "bold", cursor: "pointer", textDecoration: "underline" },

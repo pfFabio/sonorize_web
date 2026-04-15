@@ -17,6 +17,7 @@ export default function HomeScreen({ navigateTo }) {
   const [transcription, setTranscription] = useState("");
   const [audioFile, setAudioFile] = useState(null);
   const [showSaveOptions, setShowSaveOptions] = useState(false);
+  const [language, setLanguage] = useState('portuguese'); // Novo estado para o idioma
 
   // Função para lidar com o envio de áudio usando a API da Web
   const handleFileSelect = () => {
@@ -57,7 +58,7 @@ export default function HomeScreen({ navigateTo }) {
       const result = await transcriber(audioFile, {
         chunk_length_s: 30,
         stride_length_s: 5,
-        language: 'portuguese',
+        language: language, // Usar o idioma do estado
         task: 'transcribe',
       });
       setTranscription(result.text);
@@ -78,6 +79,25 @@ export default function HomeScreen({ navigateTo }) {
     // Substituindo View por div e aplicando estilos
     <div style={styles.card}>
       <img src="src/screens/logo.jpg" alt="Logo" style={{ width: 100, height: 100 }} />
+
+      <div style={{marginBottom: 20, marginTop: 20}}>
+        <label htmlFor="language-select" style={{marginRight: 10, fontWeight: 'bold'}}>Idioma do Áudio:</label>
+        <select 
+          id="language-select"
+          value={language} 
+          onChange={(e) => setLanguage(e.target.value)}
+          style={styles.select}
+        >
+          <option value="portuguese">Português</option>
+          <option value="english">Inglês</option>
+          <option value="spanish">Espanhol</option>
+          <option value="french">Francês</option>
+          <option value="german">Alemão</option>
+          <option value="japanese">Japonês</option>
+          <option value="chinese">Chinês</option>
+          <option value="russian">Russo</option>
+        </select>
+      </div>
 
       <button style={styles.button} onClick={() => navigateTo("Gravação")}>
         🎙️ Gravar Áudio
@@ -168,6 +188,13 @@ const styles = {
     cursor: 'pointer',
     margin: '10px 0',
     width: '100%',
+  },
+  select: {
+    padding: '8px 12px',
+    borderRadius: 5,
+    border: '1px solid #ccc',
+    fontSize: 16,
+    cursor: 'pointer',
   },
   subtitle: {
     marginTop: 30,

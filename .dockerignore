@@ -1,0 +1,13 @@
+# Git
+.git
+.gitignore
+
+# Node
+node_modules/
+build/
+
+# Python
+__pycache__/
+
+# Secrets / Local config
+.env

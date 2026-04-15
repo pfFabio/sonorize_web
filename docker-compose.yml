@@ -1,0 +1,24 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: sonorize_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      # Isso persiste o arquivo do banco de dados SQLite na máquina host
+      - ./backend/sonorize.db:/app/backend/sonorize.db
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        - REACT_APP_SUPABASE_URL=${REACT_APP_SUPABASE_URL}
+        - REACT_APP_SUPABASE_ANON_KEY=${REACT_APP_SUPABASE_ANON_KEY}
+    container_name: sonorize_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
