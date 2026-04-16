@@ -7,6 +7,7 @@ import RecordScreen from './screens/RecordScreen';
 import TranscriptScreen from './screens/TranscriptScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import LoginScreen from './screens/LoginScreen';
+import RegisterScreen from './screens/RegisterScreen';
 
 function App() {
   // Estado para controlar a tela atual e seus parâmetros
@@ -22,6 +23,8 @@ function App() {
     switch (currentScreen.name) {
       case 'Login':
         return <LoginScreen navigateTo={navigateTo} />;
+      case 'Register':
+        return <RegisterScreen navigateTo={navigateTo} />;
       case 'Gravação':
         // A tela de gravação não precisa de parâmetros especiais por enquanto
         return <RecordScreen />;
@@ -42,7 +45,7 @@ function App() {
       <main className="app-main">
         {renderScreen()}
       </main>
-      {currentScreen.name !== 'Login' && (
+      {currentScreen.name !== 'Login' && currentScreen.name !== 'Register' && (
         <nav className="app-nav">
           <button onClick={() => navigateTo('Home')}>Home</button>
           <button onClick={() => navigateTo('Configurações')}>Configurações</button>

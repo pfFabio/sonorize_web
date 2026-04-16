@@ -96,6 +96,13 @@ async def read_users_me(current_user: bd.User = Depends(get_current_user)):
     """Retorna os dados do usuário que está logado."""
     return current_user
 
+@api_router.get("/users/all", response_model=List[UserResponse])
+def list_all_users():
+    """Endpoint de teste para listar todos os usuários no banco de dados."""
+    users = bd.get_all_users()
+    return users
+
+
 app.include_router(api_router)
 
 # Futuros endpoints para salvar e listar transcrições irão aqui.

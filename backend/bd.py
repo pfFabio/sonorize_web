@@ -78,6 +78,14 @@ def create_user(email: str, password: str):
     finally:
         db.close()
 
+def get_all_users():
+    """Busca todos os usuários no banco de dados."""
+    db = SessionLocal()
+    try:
+        return db.query(User).all()
+    finally:
+        db.close()
+
 # --- Bloco de Execução Principal ---
 if __name__ == "__main__":
     # Este bloco será executado quando você rodar o script diretamente.
