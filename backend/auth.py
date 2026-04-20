@@ -1,15 +1,20 @@
+import os
+from dotenv import load_dotenv
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 
+# Carrega as variáveis de ambiente do arquivo .env na raiz do projeto
+load_dotenv()
+
 # --- Configuração de Segurança ---
 
-# Chave secreta para assinar os tokens JWT. Em produção, use uma chave mais complexa e guarde-a como uma variável de ambiente.
-SECRET_KEY = "uma-chave-secreta-muito-forte" 
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30 # O token expira em 30 minutos
+# Chave secreta, algoritmo e tempo de expiração lidos das variáveis de ambiente.
+SECRET_KEY = os.getenv("SECRET_KEY", "chave-secreta-super-segura-desenvolvimento")
+ALGORITHM = os.getenv("ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30)) # Padrão de 30 min se não for encontrado
 
 # Contexto para hashing de senhas usando o algoritmo bcrypt
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
