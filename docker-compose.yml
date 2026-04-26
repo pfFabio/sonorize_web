@@ -9,6 +9,8 @@ services:
     volumes:
       # Isso persiste o arquivo do banco de dados SQLite na máquina host
       - ./backend/sonorize.db:/app/backend/sonorize.db
+    env_file:
+      - .env
 
   frontend:
     build:
