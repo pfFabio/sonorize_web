@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 # Importações dos nossos módulos
 from backend import bd
@@ -32,7 +32,7 @@ class UserResponse(BaseModel):
     created_at: datetime
     login: str
     email: str
-    lingua: str | None = None
+    lingua: Optional[str] = None
 
     class Config:
         orm_mode = True
