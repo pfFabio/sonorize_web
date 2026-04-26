@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { supabase } from "../supabaseClient"; // Importa o cliente Supabase
  
 export default function LoginScreen({ navigateTo }) {
-  const [email, setEmail] = useState("");
+  const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -14,26 +14,26 @@ export default function LoginScreen({ navigateTo }) {
     setIsLoading(true);
  
     try {
-      // Tenta fazer login com e-mail e senha usando o Supabase
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password,
-      });
+      // Consulta direta à tabela usuarios usando o campo login
+      const { data, error } = await supabase
+        .from("usuarios")
+        .select("*")
+        .eq("login", login)
+        .single(); // Retorna apenas o usuário correspondente
  
-      if (error) {
-        // Se houver um erro do Supabase, lança-o
-        throw error;
+      if (error || !data) {
+        throw new Error("Usuário não encontrado.");
       }
  
-      if (data.user) {
-        // Login bem-sucedido, o token é gerenciado automaticamente pelo Supabase
-        // e o usuário está disponível em data.user
-        console.log("Usuário logado:", data.user);
-        navigateTo("Home"); // Navega para a home em caso de sucesso
+      // Compara a senha informada com a do banco
+      if (data.senha !== password) {
+        throw new Error("Senha incorreta.");
       }
       
-      // Salva o token no localStorage para ser usado em outras requisições
-      localStorage.setItem('authToken', data.access_token);
+      console.log("Usuário logado:", data);
+      
+      // Salva as informações do usuário localmente
+      localStorage.setItem('user', JSON.stringify(data));
       navigateTo("Home"); // Navega para a home em caso de sucesso
 
     } catch (err) {
@@ -53,13 +53,13 @@ export default function LoginScreen({ navigateTo }) {
 
         <form onSubmit={handleLogin} style={styles.form}>
           <div style={styles.inputGroup}>
-            <label style={styles.label}>E-mail</label>
+            <label style={styles.label}>Login</label>
             <input
-              type="email"
+              type="text"
               style={styles.input}
-              placeholder="seu@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Seu nome de usuário"
+              value={login}
+              onChange={(e) => setLogin(e.target.value)}
               required
             />
           </div>
