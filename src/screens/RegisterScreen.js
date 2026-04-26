@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+import { supabase } from "../supabaseClient";
 
 export default function RegisterScreen({ navigateTo }) {
+  const [login, setLogin] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -21,25 +23,22 @@ export default function RegisterScreen({ navigateTo }) {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      const { error } = await supabase
+        .from("usuarios")
+        .insert([{ login: login, email: email, senha: password }]);
 
-      const data = await response.json();
-
-      if (response.ok) {
-        setMessage("Usuário cadastrado com sucesso! Você pode voltar e fazer o login.");
-        setIsSuccess(true);
-        setEmail("");
-        setPassword("");
-        setConfirmPassword("");
-      } else {
-        setMessage(data.detail || "Erro ao realizar cadastro.");
+      if (error) {
+        throw error;
       }
+
+      setMessage("Usuário cadastrado com sucesso! Você pode voltar e fazer o login.");
+      setIsSuccess(true);
+      setLogin("");
+      setEmail("");
+      setPassword("");
+      setConfirmPassword("");
     } catch (error) {
-      setMessage("Erro de conexão com o servidor. Verifique se a API está rodando.");
+      setMessage(error.message || "Erro desconhecido ao realizar cadastro.");
     } finally {
       setIsLoading(false);
     }
@@ -59,13 +58,13 @@ export default function RegisterScreen({ navigateTo }) {
 
         <form onSubmit={handleRegister} style={styles.form}>
           <div style={styles.inputGroup}>
-            <label style={styles.label}>E-mail</label>
+            <label style={styles.label}>Nome de Usuário</label>
             <input
-              type="email"
+              type="text"
               style={styles.input}
-              placeholder="seu@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Seu login"
+              value={login}
+              onChange={(e) => setLogin(e.target.value)}
               required
             />
           </div>
