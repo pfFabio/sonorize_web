@@ -6,6 +6,7 @@ export default function RegisterScreen({ navigateTo }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [lingua, setLingua] = useState("Português");
   const [message, setMessage] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -25,7 +26,7 @@ export default function RegisterScreen({ navigateTo }) {
     try {
       const { error } = await supabase
         .from("usuarios")
-        .insert([{ login: login, email: email, senha: password }]);
+        .insert([{ login: login, email: email, senha: password, lingua: lingua }]);
 
       if (error) {
         throw error;
@@ -37,6 +38,7 @@ export default function RegisterScreen({ navigateTo }) {
       setEmail("");
       setPassword("");
       setConfirmPassword("");
+      setLingua("Português");
     } catch (error) {
       setMessage(error.message || "Erro desconhecido ao realizar cadastro.");
     } finally {
@@ -70,6 +72,18 @@ export default function RegisterScreen({ navigateTo }) {
           </div>
 
           <div style={styles.inputGroup}>
+            <label style={styles.label}>E-mail</label>
+            <input
+              type="email"
+              style={styles.input}
+              placeholder="Seu e-mail"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+
+          <div style={styles.inputGroup}>
             <label style={styles.label}>Senha</label>
             <input
               type="password"
@@ -91,6 +105,19 @@ export default function RegisterScreen({ navigateTo }) {
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
             />
+          </div>
+
+          <div style={styles.inputGroup}>
+            <label style={styles.label}>Idioma Preferido</label>
+            <select
+              style={styles.input}
+              value={lingua}
+              onChange={(e) => setLingua(e.target.value)}
+            >
+              <option value="Português">Português</option>
+              <option value="Inglês">Inglês</option>
+              <option value="Espanhol">Espanhol</option>
+            </select>
           </div>
 
           <div style={styles.buttonGroup}>
