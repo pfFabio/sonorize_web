@@ -24,7 +24,8 @@ export default function RegisterScreen({ navigateTo }) {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://localhost:8001/api/register", {
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8001";
+      const response = await fetch(`${apiUrl}/api/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ login: login, email: email, senha: password, lingua: lingua })
