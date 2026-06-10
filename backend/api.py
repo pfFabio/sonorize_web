@@ -6,15 +6,10 @@ from backend.routers import auth, users
 
 app = FastAPI()
 
-# Configuração do CORS para permitir que o frontend (React) acesse a API
-origins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
