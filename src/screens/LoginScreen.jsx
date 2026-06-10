@@ -18,7 +18,8 @@ export default function LoginScreen({ navigateTo }) {
       formData.append("username", login);
       formData.append("password", password);
 
-      const response = await fetch("http://localhost:8001/api/token", {
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8001";
+      const response = await fetch(`${apiUrl}/api/token`, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: formData.toString()
