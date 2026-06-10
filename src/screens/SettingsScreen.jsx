@@ -50,7 +50,12 @@ export default function SettingsScreen() {
       </div>
 
       <div style={{ marginBottom: 20, textAlign: 'left' }}>
-        <p style={{ fontWeight: 'bold', marginBottom: 10 }}>Qualidade atual: {qualidade}</p>
+        <p style={{ fontWeight: 'bold', marginBottom: 5 }}>Qualidade de Transcrição: {qualidade}</p>
+        <p style={{fontSize: 12, color: '#666', marginBottom: 10}}>
+          {qualidade === "Alto" 
+            ? "Usa o Whisper Small: Maior precisão de áudio, porém um pouco mais lento para processar." 
+            : "Usa o Whisper Tiny: Processamento muito rápido, porém com precisão reduzida em áudios complexos."}
+        </p>
         <button
           style={styles.button}
           onClick={toggleQualidade}

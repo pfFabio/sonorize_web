@@ -46,8 +46,11 @@ export default function HomeScreen({ navigateTo }) {
     setProgress(0);
 
     try {
-      // Carrega o modelo Whisper Small (maior precisão para português)
-      const transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-small', {
+      // Seleciona o modelo com base na qualidade escolhida
+      const appQualidade = localStorage.getItem('appQualidade') || 'Alto';
+      const modelToUse = appQualidade === 'Médio' ? 'Xenova/whisper-tiny' : 'Xenova/whisper-small';
+
+      const transcriber = await pipeline('automatic-speech-recognition', modelToUse, {
         progress_callback: (data) => {
           if (data.status === 'progress') {
             setProgress(data.progress);
