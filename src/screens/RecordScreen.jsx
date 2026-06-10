@@ -60,7 +60,13 @@ export default function RecordScreen() {
     speechRecognitionRef.current = new SpeechRecognition();
     speechRecognitionRef.current.continuous = true;
     speechRecognitionRef.current.interimResults = true;
-    speechRecognitionRef.current.lang = "pt-BR";
+    
+    const appLang = localStorage.getItem('appLanguage') || 'portuguese';
+    const langMap = {
+      portuguese: 'pt-BR', english: 'en-US', spanish: 'es-ES', french: 'fr-FR',
+      german: 'de-DE', japanese: 'ja-JP', chinese: 'zh-CN', russian: 'ru-RU'
+    };
+    speechRecognitionRef.current.lang = langMap[appLang] || 'pt-BR';
 
     speechRecognitionRef.current.onresult = (event) => {
       let interimTranscript = "";

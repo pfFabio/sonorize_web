@@ -29,7 +29,13 @@ export default function TranscriptScreen({ route }) {
     }
 
     const recognition = new SpeechRecognition();
-    recognition.lang = 'pt-BR';
+    
+    const appLang = localStorage.getItem('appLanguage') || 'portuguese';
+    const langMap = {
+      portuguese: 'pt-BR', english: 'en-US', spanish: 'es-ES', french: 'fr-FR',
+      german: 'de-DE', japanese: 'ja-JP', chinese: 'zh-CN', russian: 'ru-RU'
+    };
+    recognition.lang = langMap[appLang] || 'pt-BR';
     recognition.interimResults = true; // Resultados parciais
     recognition.continuous = true; // Continua escutando
     recognitionRef.current = recognition;
