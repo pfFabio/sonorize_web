@@ -18,7 +18,7 @@ export default function HomeScreen({ navigateTo }) {
   const [transcription, setTranscription] = useState("");
   const [audioFile, setAudioFile] = useState(null);
   const [showSaveOptions, setShowSaveOptions] = useState(false);
-  const [language, setLanguage] = useState('portuguese'); // Novo estado para o idioma
+  const [language, setLanguage] = useState(localStorage.getItem('appLanguage') || 'portuguese');
 
   // Função para lidar com o envio de áudio usando a API da Web
   const handleFileSelect = () => {
@@ -87,24 +87,6 @@ export default function HomeScreen({ navigateTo }) {
     <div style={styles.card}>
       <img src={logoImage} alt="Logo" style={{ width: 100, height: 100 }} />
 
-      <div style={{marginBottom: 20, marginTop: 20}}>
-        <label htmlFor="language-select" style={{marginRight: 10, fontWeight: 'bold'}}>Idioma do Áudio:</label>
-        <select 
-          id="language-select"
-          value={language} 
-          onChange={(e) => setLanguage(e.target.value)}
-          style={styles.select}
-        >
-          <option value="portuguese">Português</option>
-          <option value="english">Inglês</option>
-          <option value="spanish">Espanhol</option>
-          <option value="french">Francês</option>
-          <option value="german">Alemão</option>
-          <option value="japanese">Japonês</option>
-          <option value="chinese">Chinês</option>
-          <option value="russian">Russo</option>
-        </select>
-      </div>
 
       <button style={styles.button} onClick={() => navigateTo("Gravação")}>
         🎙️ Gravar Áudio

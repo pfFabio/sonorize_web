@@ -1,30 +1,63 @@
-import React, { useState } from "react";
-// import { View, Text, TouchableOpacity } from "react-native"; // Removido
-// import styles from "../styles"; // Usaremos estilos inline ou CSS
+import React, { useState, useEffect } from "react";
 
 export default function SettingsScreen() {
-  const [idioma, setIdioma] = useState("Português");
+  const [idioma, setIdioma] = useState("portuguese");
   const [qualidade, setQualidade] = useState("Alto");
+
+  useEffect(() => {
+    // Carrega as configurações salvas assim que a tela abre
+    const savedLang = localStorage.getItem("appLanguage");
+    if (savedLang) setIdioma(savedLang);
+    
+    const savedQualidade = localStorage.getItem("appQualidade");
+    if (savedQualidade) setQualidade(savedQualidade);
+  }, []);
+
+  const handleLanguageChange = (e) => {
+    const newLang = e.target.value;
+    setIdioma(newLang);
+    localStorage.setItem("appLanguage", newLang); // Salva no navegador
+  };
+
+  const toggleQualidade = () => {
+    const novaQualidade = qualidade === "Alto" ? "Médio" : "Alto";
+    setQualidade(novaQualidade);
+    localStorage.setItem("appQualidade", novaQualidade); // Salva no navegador
+  };
 
   return (
     <div style={styles.card}>
       <h2 style={styles.title}>Configurações</h2>
-      <p style={styles.text}>Idioma: {idioma}</p>
-      <p style={styles.text}>Qualidade: {qualidade}</p>
+      
+      <div style={{ marginBottom: 30, textAlign: 'left' }}>
+        <label htmlFor="language-select" style={{ fontWeight: 'bold' }}>Idioma Padrão para Transcrição:</label>
+        <p style={{fontSize: 12, color: '#666', marginTop: 5}}>Escolha o idioma do áudio para que a Inteligência Artificial seja mais precisa.</p>
+        <select 
+          id="language-select"
+          value={idioma} 
+          onChange={handleLanguageChange}
+          style={{ ...styles.select, width: '100%', marginTop: 10 }}
+        >
+          <option value="portuguese">Português</option>
+          <option value="english">Inglês</option>
+          <option value="spanish">Espanhol</option>
+          <option value="french">Francês</option>
+          <option value="german">Alemão</option>
+          <option value="japanese">Japonês</option>
+          <option value="chinese">Chinês</option>
+          <option value="russian">Russo</option>
+        </select>
+      </div>
 
-      <button
-        style={styles.button}
-        onClick={() => setIdioma(idioma === "Português" ? "Inglês" : "Português")}
-      >
-        🌍 Trocar Idioma
-      </button>
-
-      <button
-        style={styles.button}
-        onClick={() => setQualidade(qualidade === "Alto" ? "Médio" : "Alto")}
-      >
-        ⚙️ Qualidade
-      </button>
+      <div style={{ marginBottom: 20, textAlign: 'left' }}>
+        <p style={{ fontWeight: 'bold', marginBottom: 10 }}>Qualidade atual: {qualidade}</p>
+        <button
+          style={styles.button}
+          onClick={toggleQualidade}
+        >
+          ⚙️ Alternar Qualidade
+        </button>
+      </div>
     </div>
   );
 }
@@ -33,8 +66,9 @@ export default function SettingsScreen() {
 const styles = {
   card: { padding: 20,
     margin: 20,
-    marginLeft: 250,
-    marginRight: 250,
+    marginLeft: 'auto',
+    marginRight: 'auto',
+    maxWidth: 600,
     borderRadius: 10,
     backgroundColor: '#f9f9f9', boxShadow: '0 4px 8px rgba(0,0,0,0.1)', textAlign: 'center' },
   title: { fontSize: 22, fontWeight: 'bold', marginBottom: 20 },
@@ -49,5 +83,12 @@ const styles = {
     cursor: 'pointer',
     margin: '10px 0',
     width: '100%',
+  },
+  select: {
+    padding: '10px 15px',
+    borderRadius: 5,
+    border: '1px solid #ccc',
+    fontSize: 16,
+    cursor: 'pointer',
   },
 };
