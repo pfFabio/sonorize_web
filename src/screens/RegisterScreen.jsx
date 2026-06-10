@@ -24,12 +24,15 @@ export default function RegisterScreen({ navigateTo }) {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase
-        .from("usuarios")
-        .insert([{ login: login, email: email, senha: password, lingua: lingua }]);
+      const response = await fetch("http://localhost:8001/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ login: login, email: email, senha: password, lingua: lingua })
+      });
 
-      if (error) {
-        throw error;
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.detail || "Erro ao realizar cadastro.");
       }
 
       setMessage("Usuário cadastrado com sucesso! Você pode voltar e fazer o login.");

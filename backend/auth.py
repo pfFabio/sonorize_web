@@ -25,8 +25,13 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/token")
 # --- Funções de Utilidade ---
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verifica se a senha fornecida corresponde à senha hasheada."""
-    return pwd_context.verify(plain_password, hashed_password)
+    """Verifica se a senha fornecida corresponde à senha hasheada (ou permite fallback para texto puro legado)."""
+    try:
+        from passlib.exc import UnknownHashError
+        return pwd_context.verify(plain_password, hashed_password)
+    except (UnknownHashError, ValueError):
+        # Permite login com senhas antigas que não foram criptografadas
+        return plain_password == hashed_password
 
 def get_password_hash(password: str) -> str:
     """Gera o hash de uma senha."""

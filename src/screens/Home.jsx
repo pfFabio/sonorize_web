@@ -4,6 +4,7 @@ import React, { useState } from "react";
 // import * as DocumentPicker from "expo-document-picker"; // Removido
 import { handleSave } from "./fileSaver";
 import { pipeline, env } from "@xenova/transformers";
+import logoImage from "./logo.jpg";
 // import styles from "../styles"; // Usaremos estilos inline ou CSS
 
 // Configuração para rodar no navegador buscando do Hugging Face Hub
@@ -45,8 +46,8 @@ export default function HomeScreen({ navigateTo }) {
     setProgress(0);
 
     try {
-      // Carrega o modelo Whisper Tiny (leve para navegador)
-      const transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', {
+      // Carrega o modelo Whisper Small (maior precisão para português)
+      const transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-small', {
         progress_callback: (data) => {
           if (data.status === 'progress') {
             setProgress(data.progress);
@@ -55,11 +56,17 @@ export default function HomeScreen({ navigateTo }) {
       });
 
       setStatus('transcribing');
+      setTranscription(""); // Limpa o campo para a nova transcrição
+
       const result = await transcriber(audioFile, {
         chunk_length_s: 30,
         stride_length_s: 5,
         language: language, // Usar o idioma do estado
         task: 'transcribe',
+        chunk_callback: (chunk) => {
+          // Aparece o texto aos poucos na tela!
+          setTranscription(prev => prev + (chunk.text || "") + " ");
+        }
       });
       setTranscription(result.text);
       setStatus('done');
@@ -78,7 +85,7 @@ export default function HomeScreen({ navigateTo }) {
   return (
     // Substituindo View por div e aplicando estilos
     <div style={styles.card}>
-      <img src="src/screens/logo.jpg" alt="Logo" style={{ width: 100, height: 100 }} />
+      <img src={logoImage} alt="Logo" style={{ width: 100, height: 100 }} />
 
       <div style={{marginBottom: 20, marginTop: 20}}>
         <label htmlFor="language-select" style={{marginRight: 10, fontWeight: 'bold'}}>Idioma do Áudio:</label>
@@ -116,9 +123,9 @@ export default function HomeScreen({ navigateTo }) {
             onClick={handleTranscribe}
             disabled={status === 'loading' || status === 'transcribing'}
           >
-            {status === 'loading' ? `Carregando Modelo (${Math.round(progress)}%)...` : 
-             status === 'transcribing' ? "Transcrevendo..." : 
-             "⚡ Transcrever com Whisper (Local)"}
+            {status === 'loading' ? `Baixando Modelo (${Math.round(progress)}%)...` : 
+             status === 'transcribing' ? "⏳ Transcrevendo... (Lendo Áudio)" : 
+             "⚡ Transcrever (Whisper Small - Alta Precisão)"}
           </button>
           
           <p style={{fontSize: 12, color: '#666'}}>

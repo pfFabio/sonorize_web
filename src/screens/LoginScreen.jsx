@@ -14,26 +14,27 @@ export default function LoginScreen({ navigateTo }) {
     setIsLoading(true);
  
     try {
-      // Consulta direta à tabela usuarios usando o campo login
-      const { data, error } = await supabase
-        .from("usuarios")
-        .select("*")
-        .eq("login", login)
-        .single(); // Retorna apenas o usuário correspondente
- 
-      if (error || !data) {
-        throw new Error("Usuário não encontrado.");
+      const formData = new URLSearchParams();
+      formData.append("username", login);
+      formData.append("password", password);
+
+      const response = await fetch("http://localhost:8001/api/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: formData.toString()
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.detail || "Login ou senha incorretos.");
       }
- 
-      // Compara a senha informada com a do banco
-      if (data.senha !== password) {
-        throw new Error("Senha incorreta.");
-      }
+
+      const data = await response.json();
       
       console.log("Usuário logado:", data);
       
       // Salva as informações do usuário localmente
-      localStorage.setItem('user', JSON.stringify(data));
+      localStorage.setItem('user', JSON.stringify({ login: login, token: data.access_token }));
       navigateTo("Home"); // Navega para a home em caso de sucesso
 
     } catch (err) {

@@ -1,12 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Lê as variáveis de ambiente do arquivo .env
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
-const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+// Acessa as variáveis de ambiente corretas usando o Vite (import.meta.env)
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Lança um erro se as variáveis não estiverem definidas, para evitar problemas silenciosos.
+// Verifica se as variáveis de ambiente foram carregadas corretamente
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error("As variáveis de ambiente REACT_APP_SUPABASE_URL e REACT_APP_SUPABASE_ANON_KEY precisam ser definidas no arquivo .env");
+  throw new Error("As variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY precisam ser definidas no arquivo .env");
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);

@@ -13,12 +13,12 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 # Pega a URL e a Chave da API REST do Supabase
-url: str = os.getenv("REACT_APP_SUPABASE_URL")
-key: str = os.getenv("REACT_APP_SUPABASE_ANON_KEY")
+url: str = os.getenv("VITE_SUPABASE_URL")
+key: str = os.getenv("VITE_SUPABASE_ANON_KEY")
 
 if not url or not key:
     raise ValueError(
-        "As variáveis REACT_APP_SUPABASE_URL e REACT_APP_SUPABASE_ANON_KEY não foram encontradas.\n"
+        "As variáveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY não foram encontradas.\n"
         "Verifique seu arquivo .env."
     )
 
@@ -42,6 +42,16 @@ def get_user_by_email(email: str):
         logger.error(f"Erro ao buscar usuário pelo email '{email}': {e}", exc_info=True)
         return None
 
+def get_user_by_login(login: str):
+    """Busca um usuário pelo login."""
+    try:
+        resposta = supabase.table("usuarios").select("*").eq("login", login).execute()
+        if len(resposta.data) > 0:
+            return resposta.data[0]
+        return None
+    except Exception as e:
+        logger.error(f"Erro ao buscar usuário pelo login '{login}': {e}", exc_info=True)
+        return None
 def create_user(login: str, email: str, senha: str):
     """Cria um novo usuário no banco de dados com senha hasheada."""
     try:

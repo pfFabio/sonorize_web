@@ -3,8 +3,8 @@ FROM node:18-alpine AS build
 WORKDIR /app
 
 # Declara os argumentos que serão recebidos do docker-compose
-ARG REACT_APP_SUPABASE_URL
-ARG REACT_APP_SUPABASE_ANON_KEY
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_ANON_KEY
 
 # Copia package.json e package-lock.json (ou yarn.lock)
 COPY package*.json ./
@@ -17,8 +17,8 @@ RUN npm install
 COPY . .
 
 # Expõe os argumentos como variáveis de ambiente para o comando de build
-ENV REACT_APP_SUPABASE_URL=$REACT_APP_SUPABASE_URL
-ENV REACT_APP_SUPABASE_ANON_KEY=$REACT_APP_SUPABASE_ANON_KEY
+ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
+ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
 
 # Constrói a aplicação React para produção
 RUN npm run build
