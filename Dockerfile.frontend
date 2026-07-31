@@ -3,6 +3,7 @@ FROM node:18-alpine AS build
 WORKDIR /app
 
 # Declara os argumentos que serão recebidos do docker-compose
+ARG VITE_API_URL
 ARG VITE_SUPABASE_URL
 ARG VITE_SUPABASE_ANON_KEY
 
@@ -17,6 +18,7 @@ RUN npm install
 COPY . .
 
 # Expõe os argumentos como variáveis de ambiente para o comando de build
+ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
 ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
 

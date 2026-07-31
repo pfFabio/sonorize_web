@@ -24,7 +24,7 @@ export default function RegisterScreen({ navigateTo }) {
     setIsLoading(true);
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8001";
+      const apiUrl = import.meta.env.VITE_API_URL || "";
       const response = await fetch(`${apiUrl}/api/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -44,7 +44,11 @@ export default function RegisterScreen({ navigateTo }) {
       setConfirmPassword("");
       setLingua("Português");
     } catch (error) {
-      setMessage(error.message || "Erro desconhecido ao realizar cadastro.");
+      if (error instanceof TypeError && error.message.toLowerCase().includes("fetch")) {
+        setMessage("Não foi possível conectar ao servidor backend. Verifique a conexão com o servidor.");
+      } else {
+        setMessage(error.message || "Erro desconhecido ao realizar cadastro.");
+      }
     } finally {
       setIsLoading(false);
     }

@@ -18,7 +18,7 @@ export default function LoginScreen({ navigateTo }) {
       formData.append("username", login);
       formData.append("password", password);
 
-      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8001";
+      const apiUrl = import.meta.env.VITE_API_URL || "";
       const response = await fetch(`${apiUrl}/api/token`, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -39,7 +39,11 @@ export default function LoginScreen({ navigateTo }) {
       navigateTo("Home"); // Navega para a home em caso de sucesso
 
     } catch (err) {
-      setError(err.message || "Erro desconhecido ao fazer login.");
+      if (err instanceof TypeError && err.message.toLowerCase().includes("fetch")) {
+        setError("Não foi possível conectar ao servidor backend. Verifique a conexão com o servidor.");
+      } else {
+        setError(err.message || "Erro desconhecido ao fazer login.");
+      }
     } finally {
       setIsLoading(false);
     }
