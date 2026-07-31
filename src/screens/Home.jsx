@@ -46,9 +46,10 @@ export default function HomeScreen({ navigateTo }) {
     setProgress(0);
 
     try {
-      // Seleciona o modelo com base na qualidade escolhida
-      const appQualidade = localStorage.getItem('appQualidade') || 'Alto';
-      const modelToUse = appQualidade === 'Médio' ? 'Xenova/whisper-tiny' : 'Xenova/whisper-small';
+      // Detecta se é dispositivo móvel para selecionar o modelo padrão adequado
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const appQualidade = localStorage.getItem('appQualidade') || (isMobile ? 'Médio' : 'Alto');
+      const modelToUse = appQualidade === 'Alto' ? 'Xenova/whisper-small' : 'Xenova/whisper-tiny';
 
       const transcriber = await pipeline('automatic-speech-recognition', modelToUse, {
         progress_callback: (data) => {
@@ -75,7 +76,7 @@ export default function HomeScreen({ navigateTo }) {
       setStatus('done');
     } catch (err) {
       console.error(err);
-      window.alert("Erro na transcrição: " + err.message);
+      window.alert("Não foi possível concluir a transcrição. Se estiver no celular, tente alternar para a qualidade 'Médio' em Configurações.");
       setStatus(null);
     }
   };
@@ -110,7 +111,7 @@ export default function HomeScreen({ navigateTo }) {
           >
             {status === 'loading' ? `Baixando Modelo (${Math.round(progress)}%)...` : 
              status === 'transcribing' ? "⏳ Transcrevendo... (Lendo Áudio)" : 
-             "⚡ Transcrever (Whisper Small - Alta Precisão)"}
+             "⚡ Transcrever com IA (Whisper)"}
           </button>
           
           <p style={{fontSize: 12, color: '#666'}}>
