@@ -12,6 +12,8 @@ export default function RecordScreen() {
   const mediaRecorderRef = useRef(null);
   const speechRecognitionRef = useRef(null);
   const audioChunksRef = useRef([]);
+  const selectedMimeTypeRef = useRef("audio/webm");
+  const isRecordingRef = useRef(false);
 
   // Checa se o navegador suporta a Web Speech API
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -21,19 +23,47 @@ export default function RecordScreen() {
   async function startRecording() {
     setLiveTranscript("");
     setTranscript("");
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      window.alert("O acesso ao microfone não está disponível neste navegador ou exige conexão segura (HTTPS).");
+      return;
+    }
+
     try {
       // Solicita permissão para usar o microfone
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
-      mediaRecorderRef.current = new MediaRecorder(stream);
+      // Detecção de tipo de áudio suportado no navegador
+      let options = {};
+      let mimeType = "audio/webm";
+      if (typeof MediaRecorder.isTypeSupported === 'function') {
+        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+          options = { mimeType: 'audio/webm;codecs=opus' };
+          mimeType = 'audio/webm';
+        } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+          options = { mimeType: 'audio/webm' };
+          mimeType = 'audio/webm';
+        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+          options = { mimeType: 'audio/mp4' };
+          mimeType = 'audio/mp4';
+        } else if (MediaRecorder.isTypeSupported('audio/aac')) {
+          options = { mimeType: 'audio/aac' };
+          mimeType = 'audio/aac';
+        }
+      }
+      selectedMimeTypeRef.current = mimeType;
+
+      mediaRecorderRef.current = new MediaRecorder(stream, options);
       audioChunksRef.current = [];
 
       mediaRecorderRef.current.ondataavailable = (event) => {
-        audioChunksRef.current.push(event.data);
+        if (event.data && event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
       };
 
       mediaRecorderRef.current.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        const audioBlob = new Blob(audioChunksRef.current, { type: selectedMimeTypeRef.current });
         const audioUrl = URL.createObjectURL(audioBlob);
         setLastRecordingUri(audioUrl);
 
@@ -43,6 +73,7 @@ export default function RecordScreen() {
 
       mediaRecorderRef.current.start();
       setIsRecording(true);
+      isRecordingRef.current = true;
       if (isSpeechRecognitionSupported) {
         startLiveTranscription();
       }
@@ -57,34 +88,48 @@ export default function RecordScreen() {
   function startLiveTranscription() {
     if (!isSpeechRecognitionSupported) return;
 
-    speechRecognitionRef.current = new SpeechRecognition();
-    speechRecognitionRef.current.continuous = true;
-    speechRecognitionRef.current.interimResults = true;
-    
-    const appLang = localStorage.getItem('appLanguage') || 'portuguese';
-    const langMap = {
-      portuguese: 'pt-BR', english: 'en-US', spanish: 'es-ES', french: 'fr-FR',
-      german: 'de-DE', japanese: 'ja-JP', chinese: 'zh-CN', russian: 'ru-RU'
-    };
-    speechRecognitionRef.current.lang = langMap[appLang] || 'pt-BR';
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      
+      const appLang = localStorage.getItem('appLanguage') || 'portuguese';
+      const langMap = {
+        portuguese: 'pt-BR', english: 'en-US', spanish: 'es-ES', french: 'fr-FR',
+        german: 'de-DE', japanese: 'ja-JP', chinese: 'zh-CN', russian: 'ru-RU'
+      };
+      recognition.lang = langMap[appLang] || 'pt-BR';
 
-    speechRecognitionRef.current.onresult = (event) => {
-      let interimTranscript = "";
-      let finalTranscript = "";
-      for (let i = 0; i < event.results.length; i++) {
-        const transcriptPiece = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          finalTranscript += transcriptPiece;
-        } else {
-          interimTranscript += transcriptPiece;
+      recognition.onresult = (event) => {
+        let interimTranscript = "";
+        let finalTranscript = "";
+        for (let i = 0; i < event.results.length; i++) {
+          const transcriptPiece = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcriptPiece;
+          } else {
+            interimTranscript += transcriptPiece;
+          }
         }
-      }
-      setLiveTranscript(finalTranscript + interimTranscript);
-    };
+        setLiveTranscript(finalTranscript + interimTranscript);
+      };
 
+      // No Android Chrome, a transcrição para automaticamente em silêncios. Reiniciamos se ainda estiver gravando.
+      recognition.onend = () => {
+        if (isRecordingRef.current) {
+          try {
+            recognition.start();
+          } catch (e) {
+            console.log("Reinício de voz dispensado:", e);
+          }
+        }
+      };
 
-
-    speechRecognitionRef.current.start();
+      speechRecognitionRef.current = recognition;
+      recognition.start();
+    } catch (e) {
+      console.error("Erro no reconhecimento de voz:", e);
+    }
   }
 
   // Parar transcrição ao vivo
@@ -94,9 +139,10 @@ export default function RecordScreen() {
     }
   }
 
-  // Limpa o intervalo se o componente for desmontado
+  // Limpa se o componente for desmontado
   React.useEffect(() => {
     return () => {
+      isRecordingRef.current = false;
       if (speechRecognitionRef.current) {
         speechRecognitionRef.current.stop();
       }
@@ -105,6 +151,7 @@ export default function RecordScreen() {
 
   // Parar gravação
   async function stopRecording() {
+    isRecordingRef.current = false;
     if (mediaRecorderRef.current && isRecording) {
       if (isSpeechRecognitionSupported) {
         setTranscript(liveTranscript);
@@ -141,14 +188,13 @@ export default function RecordScreen() {
       <button
         style={isRecording ? styles.stopButton : styles.button}
         onClick={toggleRecording}
-        disabled={!isSpeechRecognitionSupported}
       >
         {isRecording ? "⏹️ Parar" : "🎙️ Iniciar"}
       </button>
 
       {!isSpeechRecognitionSupported && (
-        <p style={{ color: 'red', marginTop: 10 }}>
-          Seu navegador não suporta a transcrição em tempo real.
+        <p style={{ color: '#856404', backgroundColor: '#fff3cd', padding: 8, borderRadius: 5, marginTop: 10, fontSize: 14 }}>
+          Nota: Seu navegador grava áudio normalmente, mas não suporta a transcrição automática em tempo real.
         </p>
       )}
 
