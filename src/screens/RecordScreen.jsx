@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
 import { handleSave as saveTranscript } from "./fileSaver";
+import { transcribeAudio } from "../audioUtils";
 
 export default function RecordScreen() {
   const [isRecording, setIsRecording] = useState(false);
@@ -7,6 +8,8 @@ export default function RecordScreen() {
   const [transcript, setTranscript] = useState("");
   const [liveTranscript, setLiveTranscript] = useState("");
   const [showSaveOptions, setShowSaveOptions] = useState(false);
+  const [isTranscribingWithAi, setIsTranscribingWithAi] = useState(false);
+  const [aiProgress, setAiProgress] = useState(0);
 
   // Refs para a API de gravação do navegador
   const mediaRecorderRef = useRef(null);
@@ -19,10 +22,33 @@ export default function RecordScreen() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   const isSpeechRecognitionSupported = !!SpeechRecognition;
 
+  // Função para transcrever o áudio gravado utilizando o Whisper (Transformers.js)
+  const handleTranscribeAudioWithAi = async (audioUrlParam) => {
+    const targetUri = audioUrlParam || lastRecordingUri;
+    if (!targetUri) return;
+
+    setIsTranscribingWithAi(true);
+    setAiProgress(0);
+
+    try {
+      const text = await transcribeAudio(targetUri, {
+        onProgress: (p) => setAiProgress(p),
+        onChunk: (chunkText) => setTranscript(chunkText)
+      });
+      setTranscript(text);
+    } catch (err) {
+      console.error("Erro na transcrição por IA:", err);
+      window.alert("Não foi possível transcrever o áudio com IA: " + (err.message || "Erro de decodificação."));
+    } finally {
+      setIsTranscribingWithAi(false);
+    }
+  };
+
   // Iniciar gravação
   async function startRecording() {
     setLiveTranscript("");
     setTranscript("");
+    setLastRecordingUri(null);
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       window.alert("O acesso ao microfone não está disponível neste navegador ou exige conexão segura (HTTPS).");
@@ -69,6 +95,11 @@ export default function RecordScreen() {
 
         // Para a stream do microfone
         stream.getTracks().forEach(track => track.stop());
+
+        // Se a transcrição ao vivo não gerou resultados, roda automaticamente a IA Whisper
+        if (!liveTranscript.trim()) {
+          handleTranscribeAudioWithAi(audioUrl);
+        }
       };
 
       mediaRecorderRef.current.start();
@@ -154,7 +185,7 @@ export default function RecordScreen() {
     isRecordingRef.current = false;
     if (mediaRecorderRef.current && isRecording) {
       if (isSpeechRecognitionSupported) {
-        setTranscript(liveTranscript);
+        if (liveTranscript) setTranscript(liveTranscript);
         stopLiveTranscription();
       }
       mediaRecorderRef.current.stop();
@@ -182,7 +213,6 @@ export default function RecordScreen() {
     <div style={styles.card}>
       <p style={styles.title}>
         {isRecording ? "Gravando..." : "Pressione o botão para gravar"}
-
       </p>
 
       <button
@@ -194,7 +224,7 @@ export default function RecordScreen() {
 
       {!isSpeechRecognitionSupported && (
         <p style={{ color: '#856404', backgroundColor: '#fff3cd', padding: 8, borderRadius: 5, marginTop: 10, fontSize: 14 }}>
-          Nota: Seu navegador grava áudio normalmente, mas não suporta a transcrição automática em tempo real.
+          Nota: Transcrição ao vivo indisponível neste navegador. O áudio será processado por IA assim que você parar a gravação.
         </p>
       )}
 
@@ -210,22 +240,32 @@ export default function RecordScreen() {
         </div>
       )}
 
-      {lastRecordingUri && (
+      {lastRecordingUri && !isRecording && (
         <div style={{ marginTop: 20 }}>
-          <p style={styles.subtitle}>Última gravação</p>{" "}
-          {/* Adicionado espaço para consistência visual */}
-          <audio src={lastRecordingUri} controls />
+          <p style={styles.subtitle}>Última gravação</p>
+          <audio src={lastRecordingUri} controls style={{ width: '100%', marginBottom: 10 }} />
+
+          <button
+            style={isTranscribingWithAi ? styles.disabledButton : styles.aiButton}
+            onClick={() => handleTranscribeAudioWithAi()}
+            disabled={isTranscribingWithAi}
+          >
+            {isTranscribingWithAi 
+              ? `⏳ Processando com IA (${Math.round(aiProgress)}%)...` 
+              : "⚡ Re-transcrever Gravação com IA (Whisper)"}
+          </button>
         </div>
       )}
 
-      {transcript && !isRecording && (
+      {(transcript || isTranscribingWithAi) && !isRecording && (
         <div style={{ marginTop: 20 }}>
-          <p style={{ fontSize: 16, fontWeight: "bold" }}>Transcrição:</p>
+          <p style={{ fontSize: 16, fontWeight: "bold" }}>Resultado da Transcrição:</p>
           <textarea
             style={styles.textInput}
             rows={6}
             value={transcript}
             onChange={(e) => setTranscript(e.target.value)}
+            placeholder={isTranscribingWithAi ? "Lendo áudio e gerando texto com IA..." : "Sua transcrição aparecerá aqui..."}
           />
           {/* O botão de salvar agora abre o modal */}
           <button
@@ -293,6 +333,8 @@ const styles = {
   subtitle: { fontSize: 18, fontWeight: 'bold', marginTop: 20 },
   button: { backgroundColor: '#007bff', color: 'white', padding: '15px 20px', border: 'none', borderRadius: 5, fontSize: 16, cursor: 'pointer', margin: '10px 0', width: '100%' },
   stopButton: { backgroundColor: '#dc3545', color: 'white', padding: '15px 20px', border: 'none', borderRadius: 5, fontSize: 16, cursor: 'pointer', margin: '10px 0', width: '100%' },
+  aiButton: { backgroundColor: '#28a745', color: 'white', padding: '15px 20px', border: 'none', borderRadius: 5, fontSize: 16, cursor: 'pointer', margin: '10px 0', width: '100%', fontWeight: 'bold' },
+  disabledButton: { backgroundColor: '#6c757d', color: 'white', padding: '15px 20px', border: 'none', borderRadius: 5, fontSize: 16, cursor: 'not-allowed', margin: '10px 0', width: '100%' },
   textInput: {
     width: '100%',
     border: '1px solid #ccc',

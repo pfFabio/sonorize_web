@@ -1,18 +1,10 @@
 import React, { useState } from "react";
-// Componentes web equivalentes
-// import { useNavigation } from "@react-navigation/native"; // Removido
-// import * as DocumentPicker from "expo-document-picker"; // Removido
 import { handleSave } from "./fileSaver";
-import { pipeline, env } from "@xenova/transformers";
+import { transcribeAudio } from "../audioUtils";
 import logoImage from "./logo.jpg";
-// import styles from "../styles"; // Usaremos estilos inline ou CSS
-
-// Configuração para rodar no navegador buscando do Hugging Face Hub
-env.allowLocalModels = false;
 
 // O componente agora recebe props para controlar a navegação
 export default function HomeScreen({ navigateTo }) {
-  // const navigation = useNavigation(); // Removido
   const [status, setStatus] = useState(null); // null | 'loading' | 'transcribing' | 'done'
   const [progress, setProgress] = useState(0);
   const [transcription, setTranscription] = useState("");
@@ -44,39 +36,24 @@ export default function HomeScreen({ navigateTo }) {
     if (!audioFile) return;
     setStatus('loading');
     setProgress(0);
+    setTranscription(""); // Limpa o campo para a nova transcrição
 
     try {
-      // Detecta se é dispositivo móvel para selecionar o modelo padrão adequado
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      const appQualidade = localStorage.getItem('appQualidade') || (isMobile ? 'Médio' : 'Alto');
-      const modelToUse = appQualidade === 'Alto' ? 'Xenova/whisper-small' : 'Xenova/whisper-tiny';
-
-      const transcriber = await pipeline('automatic-speech-recognition', modelToUse, {
-        progress_callback: (data) => {
-          if (data.status === 'progress') {
-            setProgress(data.progress);
-          }
+      const text = await transcribeAudio(audioFile, {
+        onProgress: (p) => {
+          setProgress(p);
+          setStatus('loading');
+        },
+        onChunk: (chunkText) => {
+          setStatus('transcribing');
+          setTranscription(chunkText);
         }
       });
-
-      setStatus('transcribing');
-      setTranscription(""); // Limpa o campo para a nova transcrição
-
-      const result = await transcriber(audioFile, {
-        chunk_length_s: 30,
-        stride_length_s: 5,
-        language: language, // Usar o idioma do estado
-        task: 'transcribe',
-        chunk_callback: (chunk) => {
-          // Aparece o texto aos poucos na tela!
-          setTranscription(prev => prev + (chunk.text || "") + " ");
-        }
-      });
-      setTranscription(result.text);
+      setTranscription(text);
       setStatus('done');
     } catch (err) {
       console.error(err);
-      window.alert("Não foi possível concluir a transcrição. Se estiver no celular, tente alternar para a qualidade 'Médio' em Configurações.");
+      window.alert("Erro na transcrição: " + (err.message || "Falha ao decodificar áudio no celular."));
       setStatus(null);
     }
   };
