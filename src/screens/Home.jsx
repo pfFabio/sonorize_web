@@ -162,13 +162,14 @@ export default function HomeScreen({ navigateTo }) {
 const styles = {
   card: {
     padding: 20,
-    margin: 20,
-    marginLeft: 250,
-    marginRight: 250,
-    borderRadius: 40,
+    margin: '10px auto',
+    width: '100%',
+    maxWidth: 600,
+    borderRadius: 20,
     backgroundColor: '#f9f9f9',
     boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
     textAlign: 'center',
+    boxSizing: 'border-box',
   },
   button: {
     backgroundColor: '#007bff',
@@ -203,7 +204,7 @@ const styles = {
     backgroundColor: '#6c757d', color: 'white', padding: '10px 20px', border: 'none', borderRadius: 5, fontSize: 16, cursor: 'not-allowed', margin: '10px 0', width: '100%'
   },
   textInput: {
-    width: 'calc(100% - 22px)', border: '1px solid #ccc', padding: 10, marginTop: 10, minHeight: 100, textAlign: 'left', fontFamily: 'sans-serif', fontSize: 16,
+    width: '100%', border: '1px solid #ccc', padding: 10, marginTop: 10, minHeight: 100, textAlign: 'left', fontFamily: 'sans-serif', fontSize: 16, boxSizing: 'border-box', borderRadius: 8,
   },
   modalOverlay: {
     position: 'fixed',

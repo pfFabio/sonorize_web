@@ -165,7 +165,19 @@ export default function TranscriptScreen({ route }) {
 }
 
 const styles = {
-  container: { display: 'flex', flexDirection: 'column', height: '80vh', padding: 20, backgroundColor: "#fff" },
+  container: {
+    display: 'flex',
+    flexDirection: 'column',
+    minHeight: '70vh',
+    width: '100%',
+    maxWidth: 600,
+    margin: '10px auto',
+    padding: 20,
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+    boxSizing: 'border-box',
+  },
   title: { fontSize: 22, fontWeight: "bold", marginBottom: 20, textAlign: "center" },
   textBox: {
     flex: 1, // Ocupa o espaço disponível
@@ -176,6 +188,8 @@ const styles = {
     borderRadius: 10,
     fontSize: 18,
     fontFamily: 'sans-serif',
+    boxSizing: 'border-box',
+    width: '100%',
   },
   startButton: {
     backgroundColor: "green",

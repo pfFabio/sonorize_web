@@ -232,20 +232,23 @@ export default function RecordScreen() {
 
 // Estilos de exemplo
 const styles = {
-  card: { padding: 20,
-      margin: 20,
-      marginLeft: 200,
-      marginRight: 200,
-      borderRadius: 10,
-      backgroundColor: '#f9f9f9', 
-      boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
-      textAlign: 'center' },
+  card: {
+    padding: 20,
+    margin: '10px auto',
+    width: '100%',
+    maxWidth: 600,
+    borderRadius: 15,
+    backgroundColor: '#f9f9f9', 
+    boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+    textAlign: 'center',
+    boxSizing: 'border-box',
+  },
   title: { fontSize: 22, fontWeight: 'bold', marginBottom: 20 },
   subtitle: { fontSize: 18, fontWeight: 'bold', marginTop: 20 },
   button: { backgroundColor: '#007bff', color: 'white', padding: '15px 20px', border: 'none', borderRadius: 5, fontSize: 16, cursor: 'pointer', margin: '10px 0', width: '100%' },
   stopButton: { backgroundColor: '#dc3545', color: 'white', padding: '15px 20px', border: 'none', borderRadius: 5, fontSize: 16, cursor: 'pointer', margin: '10px 0', width: '100%' },
   textInput: {
-    width: 'calc(100% - 22px)', // Ajuste para padding e borda
+    width: '100%',
     border: '1px solid #ccc',
     padding: 10,
     marginTop: 10,
@@ -253,6 +256,8 @@ const styles = {
     textAlign: 'left',
     fontFamily: 'sans-serif',
     fontSize: 16,
+    boxSizing: 'border-box',
+    borderRadius: 8,
   },
   // Estilos para o Modal
   modalOverlay: {
