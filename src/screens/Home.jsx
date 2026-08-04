@@ -1,27 +1,23 @@
 import React, { useState } from "react";
-import { handleSave } from "./fileSaver";
 import { transcribeAudio } from "../audioUtils";
+import SaveModal from "../components/SaveModal";
+import * as shared from "../styles/sharedStyles";
 import logoImage from "./logo.jpg";
 
-// O componente agora recebe props para controlar a navegação
 export default function HomeScreen({ navigateTo }) {
-  const [status, setStatus] = useState(null); // null | 'loading' | 'transcribing' | 'done'
+  const [status, setStatus] = useState(null);
   const [progress, setProgress] = useState(0);
   const [transcription, setTranscription] = useState("");
   const [audioFile, setAudioFile] = useState(null);
   const [showSaveOptions, setShowSaveOptions] = useState(false);
-  const [language, setLanguage] = useState(localStorage.getItem('appLanguage') || 'portuguese');
 
-  // Função para lidar com o envio de áudio usando a API da Web
   const handleFileSelect = () => {
-    // Cria um input de arquivo dinamicamente para abrir o seletor de arquivos
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "audio/*";
     input.onchange = (event) => {
       const file = event.target.files[0];
       if (file) {
-        console.log("PASSO 1: Arquivo de áudio selecionado:", file.name);
         const url = URL.createObjectURL(file);
         setAudioFile(url);
         setTranscription("");
@@ -34,181 +30,89 @@ export default function HomeScreen({ navigateTo }) {
 
   const handleTranscribe = async () => {
     if (!audioFile) return;
-    setStatus('loading');
+    setStatus("loading");
     setProgress(0);
-    setTranscription(""); // Limpa o campo para a nova transcrição
+    setTranscription("");
 
     try {
       const text = await transcribeAudio(audioFile, {
         onProgress: (p) => {
           setProgress(p);
-          setStatus('loading');
+          setStatus("loading");
         },
         onChunk: (chunkText) => {
-          setStatus('transcribing');
+          setStatus("transcribing");
           setTranscription(chunkText);
-        }
+        },
       });
       setTranscription(text);
-      setStatus('done');
+      setStatus("done");
     } catch (err) {
       console.error(err);
-      window.alert("Erro na transcrição: " + (err.message || "Falha ao decodificar áudio no celular."));
+      window.alert("Erro na transcrição: " + (err.message || "Falha ao decodificar áudio."));
       setStatus(null);
     }
   };
 
-  const handleSaveFile = (format) => {
-      handleSave(transcription, format);
-      setShowSaveOptions(false);
-  };
+  const isProcessing = status === "loading" || status === "transcribing";
 
   return (
-    // Substituindo View por div e aplicando estilos
-    <div style={styles.card}>
+    <div style={shared.card}>
       <img src={logoImage} alt="Logo" style={{ width: 100, height: 100 }} />
 
-
-      <button style={styles.button} onClick={() => navigateTo("Gravação")}>
+      <button style={shared.button} onClick={() => navigateTo("Gravação")}>
         🎙️ Gravar Áudio
       </button>
 
-      <button style={styles.button} onClick={handleFileSelect}>
+      <button style={shared.button} onClick={handleFileSelect}>
         📤 Enviar Arquivo de Áudio
       </button>
 
       {audioFile && (
         <div style={{ marginTop: 20 }}>
-          <audio src={audioFile} controls style={{ width: '100%', marginBottom: 10 }} />
-          
-          <button 
-            style={status === 'loading' || status === 'transcribing' ? styles.disabledButton : styles.startButton} 
+          <audio src={audioFile} controls style={{ width: "100%", marginBottom: 10 }} />
+
+          <button
+            style={isProcessing ? shared.disabledButton : shared.startButton}
             onClick={handleTranscribe}
-            disabled={status === 'loading' || status === 'transcribing'}
+            disabled={isProcessing}
           >
-            {status === 'loading' ? `Baixando Modelo (${Math.round(progress)}%)...` : 
-             status === 'transcribing' ? "⏳ Transcrevendo... (Lendo Áudio)" : 
-             "⚡ Transcrever com IA (Whisper)"}
+            {status === "loading"
+              ? `Baixando Modelo (${Math.round(progress)}%)...`
+              : status === "transcribing"
+              ? "⏳ Transcrevendo... (Lendo Áudio)"
+              : "⚡ Transcrever com IA (Whisper)"}
           </button>
-          
-          <p style={{fontSize: 12, color: '#666'}}>
+
+          <p style={{ fontSize: 12, color: "#666" }}>
             Nota: O processamento é feito localmente no seu navegador usando Transformers.js.
           </p>
 
           <textarea
-            style={styles.textInput}
+            style={shared.textInput}
             rows={10}
             value={transcription}
             readOnly
             placeholder={
-              status === 'transcribing' ? "Processando áudio..." : 
-              "A transcrição aparecerá aqui..."
+              status === "transcribing"
+                ? "Processando áudio..."
+                : "A transcrição aparecerá aqui..."
             }
           />
 
           {transcription && (
-            <button style={styles.button} onClick={() => setShowSaveOptions(true)}>
+            <button style={shared.button} onClick={() => setShowSaveOptions(true)}>
               💾 Salvar Transcrição
             </button>
           )}
         </div>
       )}
 
-      {/* Modal de Opções de Salvamento */}
-      {showSaveOptions && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modalContent}>
-            <p style={styles.modalTitle}>Escolha o formato para salvar</p>
-            <button style={styles.modalButton} onClick={() => handleSaveFile('txt')}>.txt</button>
-            <button style={styles.modalButton} onClick={() => handleSaveFile('pdf')}>.pdf</button>
-            <button style={styles.modalButton} onClick={() => handleSaveFile('csv')}>.csv</button>
-            <button 
-              style={{...styles.modalButton, backgroundColor: '#6c757d', marginTop: 20}} 
-              onClick={() => setShowSaveOptions(false)}
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
-      )}
-   </div>
+      <SaveModal
+        isOpen={showSaveOptions}
+        onClose={() => setShowSaveOptions(false)}
+        text={transcription}
+      />
+    </div>
   );
 }
-
-// Exemplo de estilos que podem ser usados.
-// Idealmente, isso viria de um arquivo CSS ou de uma biblioteca CSS-in-JS.
-const styles = {
-  card: {
-    padding: 20,
-    margin: '10px auto',
-    width: '100%',
-    maxWidth: 600,
-    borderRadius: 20,
-    backgroundColor: '#f9f9f9',
-    boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
-    textAlign: 'center',
-    boxSizing: 'border-box',
-  },
-  button: {
-    backgroundColor: '#007bff',
-    color: 'white',
-    padding: '15px 20px',
-    border: 'none',
-    borderRadius: 5,
-    fontSize: 16,
-    cursor: 'pointer',
-    margin: '10px 0',
-    width: '100%',
-  },
-  select: {
-    padding: '8px 12px',
-    borderRadius: 5,
-    border: '1px solid #ccc',
-    fontSize: 16,
-    cursor: 'pointer',
-  },
-  subtitle: {
-    marginTop: 30,
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  textMuted: {
-    color: '#6c757d',
-  },
-  startButton: {
-    backgroundColor: '#28a745', color: 'white', padding: '10px 20px', border: 'none', borderRadius: 5, fontSize: 16, cursor: 'pointer', margin: '10px 0', width: '100%'
-  },
-  disabledButton: {
-    backgroundColor: '#6c757d', color: 'white', padding: '10px 20px', border: 'none', borderRadius: 5, fontSize: 16, cursor: 'not-allowed', margin: '10px 0', width: '100%'
-  },
-  textInput: {
-    width: '100%', border: '1px solid #ccc', padding: 10, marginTop: 10, minHeight: 100, textAlign: 'left', fontFamily: 'sans-serif', fontSize: 16, boxSizing: 'border-box', borderRadius: 8,
-  },
-  modalOverlay: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000,
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    padding: '20px 40px',
-    borderRadius: 10,
-    boxShadow: '0 5px 15px rgba(0,0,0,0.3)',
-    textAlign: 'center',
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  modalButton: {
-    backgroundColor: '#007bff', color: 'white', padding: '10px 20px', border: 'none', borderRadius: 5, fontSize: 16, cursor: 'pointer', margin: '5px 0', width: '100%'
-  },
-};

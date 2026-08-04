@@ -1,7 +1,6 @@
 import React, { useState } from "react";
-// import usersData from "../users.json"; // Removido, agora usaremos a API
-import { supabase } from "../supabaseClient"; // Importa o cliente Supabase
- 
+import { loginUser } from "../services/apiClient";
+
 export default function LoginScreen({ navigateTo }) {
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
@@ -12,38 +11,13 @@ export default function LoginScreen({ navigateTo }) {
     e.preventDefault();
     setError("");
     setIsLoading(true);
- 
+
     try {
-      const formData = new URLSearchParams();
-      formData.append("username", login);
-      formData.append("password", password);
-
-      const apiUrl = import.meta.env.VITE_API_URL || "";
-      const response = await fetch(`${apiUrl}/api/token`, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: formData.toString()
-      });
-
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.detail || "Login ou senha incorretos.");
-      }
-
-      const data = await response.json();
-      
-      console.log("Usuário logado:", data);
-      
-      // Salva as informações do usuário localmente
-      localStorage.setItem('user', JSON.stringify({ login: login, token: data.access_token }));
-      navigateTo("Home"); // Navega para a home em caso de sucesso
-
+      const data = await loginUser(login, password);
+      localStorage.setItem("user", JSON.stringify({ login, token: data.access_token }));
+      navigateTo("Home");
     } catch (err) {
-      if (err instanceof TypeError && err.message.toLowerCase().includes("fetch")) {
-        setError("Não foi possível conectar ao servidor backend. Verifique a conexão com o servidor.");
-      } else {
-        setError(err.message || "Erro desconhecido ao fazer login.");
-      }
+      setError(err.message || "Erro desconhecido ao fazer login.");
     } finally {
       setIsLoading(false);
     }
@@ -82,12 +56,12 @@ export default function LoginScreen({ navigateTo }) {
             />
           </div>
 
-          <button 
-            type="submit" 
-            style={isLoading ? styles.disabledButton : styles.button} 
+          <button
+            type="submit"
+            style={isLoading ? styles.disabledButton : styles.button}
             disabled={isLoading}
           >
-            {isLoading ? 'Entrando...' : 'Entrar'}
+            {isLoading ? "Entrando..." : "Entrar"}
           </button>
         </form>
 

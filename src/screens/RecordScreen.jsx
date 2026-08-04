@@ -1,6 +1,22 @@
 import React, { useState, useRef } from "react";
 import { handleSave as saveTranscript } from "./fileSaver";
 import { transcribeAudio } from "../audioUtils";
+import { LANGUAGE_MAP, SUPPORTED_MIME_TYPES, DEFAULT_LANGUAGE } from "../constants";
+import SaveModal from "../components/SaveModal";
+import * as shared from "../styles/sharedStyles";
+
+function detectSupportedMimeType() {
+  if (typeof MediaRecorder.isTypeSupported !== "function") {
+    return { options: {}, mimeType: "audio/webm" };
+  }
+  for (const type of SUPPORTED_MIME_TYPES) {
+    if (MediaRecorder.isTypeSupported(type)) {
+      const baseMime = type.split(";")[0];
+      return { options: { mimeType: type }, mimeType: baseMime };
+    }
+  }
+  return { options: {}, mimeType: "audio/webm" };
+}
 
 export default function RecordScreen() {
   const [isRecording, setIsRecording] = useState(false);
@@ -11,18 +27,15 @@ export default function RecordScreen() {
   const [isTranscribingWithAi, setIsTranscribingWithAi] = useState(false);
   const [aiProgress, setAiProgress] = useState(0);
 
-  // Refs para a API de gravação do navegador
   const mediaRecorderRef = useRef(null);
   const speechRecognitionRef = useRef(null);
   const audioChunksRef = useRef([]);
   const selectedMimeTypeRef = useRef("audio/webm");
   const isRecordingRef = useRef(false);
 
-  // Checa se o navegador suporta a Web Speech API
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   const isSpeechRecognitionSupported = !!SpeechRecognition;
 
-  // Função para transcrever o áudio gravado utilizando o Whisper (Transformers.js)
   const handleTranscribeAudioWithAi = async (audioUrlParam) => {
     const targetUri = audioUrlParam || lastRecordingUri;
     if (!targetUri) return;
@@ -33,7 +46,7 @@ export default function RecordScreen() {
     try {
       const text = await transcribeAudio(targetUri, {
         onProgress: (p) => setAiProgress(p),
-        onChunk: (chunkText) => setTranscript(chunkText)
+        onChunk: (chunkText) => setTranscript(chunkText),
       });
       setTranscript(text);
     } catch (err) {
@@ -44,7 +57,6 @@ export default function RecordScreen() {
     }
   };
 
-  // Iniciar gravação
   async function startRecording() {
     setLiveTranscript("");
     setTranscript("");
@@ -56,27 +68,8 @@ export default function RecordScreen() {
     }
 
     try {
-      // Solicita permissão para usar o microfone
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      
-      // Detecção de tipo de áudio suportado no navegador
-      let options = {};
-      let mimeType = "audio/webm";
-      if (typeof MediaRecorder.isTypeSupported === 'function') {
-        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
-          options = { mimeType: 'audio/webm;codecs=opus' };
-          mimeType = 'audio/webm';
-        } else if (MediaRecorder.isTypeSupported('audio/webm')) {
-          options = { mimeType: 'audio/webm' };
-          mimeType = 'audio/webm';
-        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
-          options = { mimeType: 'audio/mp4' };
-          mimeType = 'audio/mp4';
-        } else if (MediaRecorder.isTypeSupported('audio/aac')) {
-          options = { mimeType: 'audio/aac' };
-          mimeType = 'audio/aac';
-        }
-      }
+      const { options, mimeType } = detectSupportedMimeType();
       selectedMimeTypeRef.current = mimeType;
 
       mediaRecorderRef.current = new MediaRecorder(stream, options);
@@ -93,10 +86,8 @@ export default function RecordScreen() {
         const audioUrl = URL.createObjectURL(audioBlob);
         setLastRecordingUri(audioUrl);
 
-        // Para a stream do microfone
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach((track) => track.stop());
 
-        // Se a transcrição ao vivo não gerou resultados, roda automaticamente a IA Whisper
         if (!liveTranscript.trim()) {
           handleTranscribeAudioWithAi(audioUrl);
         }
@@ -108,14 +99,12 @@ export default function RecordScreen() {
       if (isSpeechRecognitionSupported) {
         startLiveTranscription();
       }
-
     } catch (err) {
       console.error("Erro ao iniciar gravação:", err);
       window.alert("Não foi possível iniciar a gravação. Verifique a permissão do microfone.");
     }
   }
 
-  // Iniciar transcrição ao vivo
   function startLiveTranscription() {
     if (!isSpeechRecognitionSupported) return;
 
@@ -123,13 +112,9 @@ export default function RecordScreen() {
       const recognition = new SpeechRecognition();
       recognition.continuous = true;
       recognition.interimResults = true;
-      
-      const appLang = localStorage.getItem('appLanguage') || 'portuguese';
-      const langMap = {
-        portuguese: 'pt-BR', english: 'en-US', spanish: 'es-ES', french: 'fr-FR',
-        german: 'de-DE', japanese: 'ja-JP', chinese: 'zh-CN', russian: 'ru-RU'
-      };
-      recognition.lang = langMap[appLang] || 'pt-BR';
+
+      const appLang = localStorage.getItem("appLanguage") || DEFAULT_LANGUAGE;
+      recognition.lang = LANGUAGE_MAP[appLang] || "pt-BR";
 
       recognition.onresult = (event) => {
         let interimTranscript = "";
@@ -145,13 +130,12 @@ export default function RecordScreen() {
         setLiveTranscript(finalTranscript + interimTranscript);
       };
 
-      // No Android Chrome, a transcrição para automaticamente em silêncios. Reiniciamos se ainda estiver gravando.
       recognition.onend = () => {
         if (isRecordingRef.current) {
           try {
             recognition.start();
           } catch (e) {
-            console.log("Reinício de voz dispensado:", e);
+            // Reinício de voz dispensado silenciosamente
           }
         }
       };
@@ -163,14 +147,12 @@ export default function RecordScreen() {
     }
   }
 
-  // Parar transcrição ao vivo
   function stopLiveTranscription() {
     if (speechRecognitionRef.current) {
       speechRecognitionRef.current.stop();
     }
   }
 
-  // Limpa se o componente for desmontado
   React.useEffect(() => {
     return () => {
       isRecordingRef.current = false;
@@ -180,7 +162,6 @@ export default function RecordScreen() {
     };
   }, []);
 
-  // Parar gravação
   async function stopRecording() {
     isRecordingRef.current = false;
     if (mediaRecorderRef.current && isRecording) {
@@ -193,37 +174,35 @@ export default function RecordScreen() {
     }
   }
 
-  // Manipulador principal de salvamento que decide o que fazer com base no formato
   const handleSave = (format) => {
     const textToSave = transcript || liveTranscript;
     saveTranscript(textToSave, format);
-    setShowSaveOptions(false); // Fecha o modal após o download
+    setShowSaveOptions(false);
   };
 
   const toggleRecording = () => {
     if (isRecording) {
       stopRecording();
-    }
-    else {
+    } else {
       startRecording();
     }
   };
 
   return (
-    <div style={styles.card}>
+    <div style={shared.card}>
       <p style={styles.title}>
         {isRecording ? "Gravando..." : "Pressione o botão para gravar"}
       </p>
 
       <button
-        style={isRecording ? styles.stopButton : styles.button}
+        style={isRecording ? shared.stopButton : shared.button}
         onClick={toggleRecording}
       >
         {isRecording ? "⏹️ Parar" : "🎙️ Iniciar"}
       </button>
 
       {!isSpeechRecognitionSupported && (
-        <p style={{ color: '#856404', backgroundColor: '#fff3cd', padding: 8, borderRadius: 5, marginTop: 10, fontSize: 14 }}>
+        <p style={styles.warningText}>
           Nota: Transcrição ao vivo indisponível neste navegador. O áudio será processado por IA assim que você parar a gravação.
         </p>
       )}
@@ -232,7 +211,7 @@ export default function RecordScreen() {
         <div style={{ marginTop: 20 }}>
           <p style={{ fontSize: 16, fontWeight: "bold" }}>Transcrição ao vivo</p>
           <textarea
-            style={styles.textInput}
+            style={shared.textInput}
             rows={6}
             value={liveTranscript}
             readOnly
@@ -243,15 +222,15 @@ export default function RecordScreen() {
       {lastRecordingUri && !isRecording && (
         <div style={{ marginTop: 20 }}>
           <p style={styles.subtitle}>Última gravação</p>
-          <audio src={lastRecordingUri} controls style={{ width: '100%', marginBottom: 10 }} />
+          <audio src={lastRecordingUri} controls style={{ width: "100%", marginBottom: 10 }} />
 
           <button
-            style={isTranscribingWithAi ? styles.disabledButton : styles.aiButton}
+            style={isTranscribingWithAi ? shared.disabledButton : shared.aiButton}
             onClick={() => handleTranscribeAudioWithAi()}
             disabled={isTranscribingWithAi}
           >
-            {isTranscribingWithAi 
-              ? `⏳ Processando com IA (${Math.round(aiProgress)}%)...` 
+            {isTranscribingWithAi
+              ? `⏳ Processando com IA (${Math.round(aiProgress)}%)...`
               : "⚡ Re-transcrever Gravação com IA (Whisper)"}
           </button>
         </div>
@@ -261,27 +240,26 @@ export default function RecordScreen() {
         <div style={{ marginTop: 20 }}>
           <p style={{ fontSize: 16, fontWeight: "bold" }}>Resultado da Transcrição:</p>
           <textarea
-            style={styles.textInput}
+            style={shared.textInput}
             rows={6}
             value={transcript}
             onChange={(e) => setTranscript(e.target.value)}
             placeholder={isTranscribingWithAi ? "Lendo áudio e gerando texto com IA..." : "Sua transcrição aparecerá aqui..."}
           />
-          {/* O botão de salvar agora abre o modal */}
           <button
-            style={{ ...styles.button, marginTop: 10 }}
+            style={{ ...shared.button, marginTop: 10 }}
             onClick={() => setShowSaveOptions(true)}
           >
             💾 Salvar
           </button>
           <button
-            style={{ ...styles.button, marginTop: 10 }}
+            style={{ ...shared.button, marginTop: 10 }}
             onClick={() => navigator.clipboard.writeText(transcript)}
           >
             📋 Copiar
           </button>
           <button
-            style={{ ...styles.button, marginTop: 10, backgroundColor: '#dc3545' }}
+            style={{ ...shared.button, marginTop: 10, backgroundColor: "#dc3545" }}
             onClick={() => {
               setTranscript("");
               setLiveTranscript("");
@@ -292,87 +270,24 @@ export default function RecordScreen() {
         </div>
       )}
 
-      {/* Modal de Opções de Salvamento */}
-      {showSaveOptions && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modalContent}>
-            <p style={styles.modalTitle}>Escolha o formato para salvar</p>
-            <button style={styles.modalButton} onClick={() => handleSave('txt')}>
-              Salvar como .txt
-            </button>
-            <button style={styles.modalButton} onClick={() => handleSave('pdf')}>
-              Salvar como .pdf
-            </button>
-            <button style={styles.modalButton} onClick={() => handleSave('csv')}>
-              Salvar como .csv
-            </button>
-            <button style={{...styles.modalButton, backgroundColor: '#6c757d', marginTop: 20}} onClick={() => setShowSaveOptions(false)}>
-              Cancelar
-            </button>
-          </div>
-        </div>
-      )}
+      <SaveModal
+        isOpen={showSaveOptions}
+        onClose={() => setShowSaveOptions(false)}
+        text={transcript || liveTranscript}
+      />
     </div>
   );
 }
 
-// Estilos de exemplo
 const styles = {
-  card: {
-    padding: 20,
-    margin: '10px auto',
-    width: '100%',
-    maxWidth: 600,
-    borderRadius: 15,
-    backgroundColor: '#f9f9f9', 
-    boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
-    textAlign: 'center',
-    boxSizing: 'border-box',
-  },
-  title: { fontSize: 22, fontWeight: 'bold', marginBottom: 20 },
-  subtitle: { fontSize: 18, fontWeight: 'bold', marginTop: 20 },
-  button: { backgroundColor: '#007bff', color: 'white', padding: '15px 20px', border: 'none', borderRadius: 5, fontSize: 16, cursor: 'pointer', margin: '10px 0', width: '100%' },
-  stopButton: { backgroundColor: '#dc3545', color: 'white', padding: '15px 20px', border: 'none', borderRadius: 5, fontSize: 16, cursor: 'pointer', margin: '10px 0', width: '100%' },
-  aiButton: { backgroundColor: '#28a745', color: 'white', padding: '15px 20px', border: 'none', borderRadius: 5, fontSize: 16, cursor: 'pointer', margin: '10px 0', width: '100%', fontWeight: 'bold' },
-  disabledButton: { backgroundColor: '#6c757d', color: 'white', padding: '15px 20px', border: 'none', borderRadius: 5, fontSize: 16, cursor: 'not-allowed', margin: '10px 0', width: '100%' },
-  textInput: {
-    width: '100%',
-    border: '1px solid #ccc',
-    padding: 10,
+  title: { fontSize: 22, fontWeight: "bold", marginBottom: 20 },
+  subtitle: { fontSize: 18, fontWeight: "bold", marginTop: 20 },
+  warningText: {
+    color: "#856404",
+    backgroundColor: "#fff3cd",
+    padding: 8,
+    borderRadius: 5,
     marginTop: 10,
-    minHeight: 100,
-    textAlign: 'left',
-    fontFamily: 'sans-serif',
-    fontSize: 16,
-    boxSizing: 'border-box',
-    borderRadius: 8,
-  },
-  // Estilos para o Modal
-  modalOverlay: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000,
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    padding: '20px 40px',
-    borderRadius: 10,
-    boxShadow: '0 5px 15px rgba(0,0,0,0.3)',
-    textAlign: 'center',
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  modalButton: {
-    backgroundColor: '#007bff', color: 'white', padding: '10px 20px', border: 'none', borderRadius: 5, fontSize: 16, cursor: 'pointer', margin: '5px 0', width: '100%'
+    fontSize: 14,
   },
 };

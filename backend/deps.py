@@ -1,5 +1,7 @@
 from fastapi import Depends, HTTPException, status
+
 from backend import auth, bd
+
 
 async def get_current_user(token: str = Depends(auth.oauth2_scheme)):
     """Dependência que valida o token e retorna os dados do usuário."""

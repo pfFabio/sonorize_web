@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { supabase } from "../supabaseClient";
+import { registerUser } from "../services/apiClient";
 
 export default function RegisterScreen({ navigateTo }) {
   const [login, setLogin] = useState("");
@@ -24,18 +24,7 @@ export default function RegisterScreen({ navigateTo }) {
     setIsLoading(true);
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || "";
-      const response = await fetch(`${apiUrl}/api/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ login: login, email: email, senha: password, lingua: lingua })
-      });
-
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.detail || "Erro ao realizar cadastro.");
-      }
-
+      await registerUser({ login, email, senha: password, lingua });
       setMessage("Usuário cadastrado com sucesso! Você pode voltar e fazer o login.");
       setIsSuccess(true);
       setLogin("");
@@ -44,11 +33,7 @@ export default function RegisterScreen({ navigateTo }) {
       setConfirmPassword("");
       setLingua("Português");
     } catch (error) {
-      if (error instanceof TypeError && error.message.toLowerCase().includes("fetch")) {
-        setMessage("Não foi possível conectar ao servidor backend. Verifique a conexão com o servidor.");
-      } else {
-        setMessage(error.message || "Erro desconhecido ao realizar cadastro.");
-      }
+      setMessage(error.message || "Erro desconhecido ao realizar cadastro.");
     } finally {
       setIsLoading(false);
     }

@@ -1,54 +1,60 @@
-import React, { useState } from 'react';
-import './App.css';
+import React, { useState } from "react";
+import "./App.css";
 
-// Importando os componentes que criamos
-import HomeScreen from './screens/Home';
-import RecordScreen from './screens/RecordScreen';
-import TranscriptScreen from './screens/TranscriptScreen';
-import SettingsScreen from './screens/SettingsScreen';
-import LoginScreen from './screens/LoginScreen';
-import RegisterScreen from './screens/RegisterScreen';
+import HomeScreen from "./screens/Home";
+import RecordScreen from "./screens/RecordScreen";
+import TranscriptScreen from "./screens/TranscriptScreen";
+import SettingsScreen from "./screens/SettingsScreen";
+import LoginScreen from "./screens/LoginScreen";
+import RegisterScreen from "./screens/RegisterScreen";
+
+const AUTH_SCREENS = ["Login", "Register"];
+
+function isAuthenticated() {
+  try {
+    const user = JSON.parse(localStorage.getItem("user"));
+    return !!user?.token;
+  } catch {
+    return false;
+  }
+}
 
 function App() {
-  // Estado para controlar a tela atual e seus parâmetros
-  const [currentScreen, setCurrentScreen] = useState({ name: 'Login', params: {} });
+  const [currentScreen, setCurrentScreen] = useState({ name: "Login", params: {} });
 
-  // Função para "navegar" entre as telas
   const navigateTo = (screenName, params = {}) => {
+    if (!AUTH_SCREENS.includes(screenName) && !isAuthenticated()) {
+      setCurrentScreen({ name: "Login", params: {} });
+      return;
+    }
     setCurrentScreen({ name: screenName, params });
   };
 
-  // Função para renderizar a tela correta
   const renderScreen = () => {
     switch (currentScreen.name) {
-      case 'Login':
+      case "Login":
         return <LoginScreen navigateTo={navigateTo} />;
-      case 'Register':
+      case "Register":
         return <RegisterScreen navigateTo={navigateTo} />;
-      case 'Gravação':
-        // A tela de gravação não precisa de parâmetros especiais por enquanto
+      case "Gravação":
         return <RecordScreen />;
-      case 'Transcrição':
-        // Passamos os parâmetros para a tela de transcrição
+      case "Transcrição":
         return <TranscriptScreen route={{ params: currentScreen.params }} />;
-      case 'Configurações':
+      case "Configurações":
         return <SettingsScreen />;
-      case 'Home':
+      case "Home":
       default:
-        // Passamos a função de navegação para a Home
         return <HomeScreen navigateTo={navigateTo} />;
     }
   };
 
   return (
     <div className="app-container">
-      <main className="app-main">
-        {renderScreen()}
-      </main>
-      {currentScreen.name !== 'Login' && currentScreen.name !== 'Register' && (
+      <main className="app-main">{renderScreen()}</main>
+      {!AUTH_SCREENS.includes(currentScreen.name) && (
         <nav className="app-nav">
-          <button onClick={() => navigateTo('Home')}>Home</button>
-          <button onClick={() => navigateTo('Configurações')}>Configurações</button>
+          <button onClick={() => navigateTo("Home")}>Home</button>
+          <button onClick={() => navigateTo("Configurações")}>Configurações</button>
         </nav>
       )}
     </div>
