@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { handleSave as saveTranscript } from "./fileSaver";
 import { LANGUAGE_MAP, DEFAULT_LANGUAGE } from "../constants";
 import SaveModal from "../components/SaveModal";
+import TranslationPanel from "../components/TranslationPanel";
 import * as shared from "../styles/sharedStyles";
 
 export default function TranscriptScreen({ route }) {
@@ -120,6 +121,10 @@ export default function TranscriptScreen({ route }) {
         >
           💾 Salvar Transcrição
         </button>
+      )}
+
+      {recognizedText && !isListening && (
+        <TranslationPanel sourceText={recognizedText} />
       )}
 
       <SaveModal

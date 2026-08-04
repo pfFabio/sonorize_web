@@ -3,6 +3,7 @@ import { handleSave as saveTranscript } from "./fileSaver";
 import { transcribeAudio } from "../audioUtils";
 import { LANGUAGE_MAP, SUPPORTED_MIME_TYPES, DEFAULT_LANGUAGE } from "../constants";
 import SaveModal from "../components/SaveModal";
+import TranslationPanel from "../components/TranslationPanel";
 import * as shared from "../styles/sharedStyles";
 
 function detectSupportedMimeType() {
@@ -267,6 +268,8 @@ export default function RecordScreen() {
           >
             🗑️ Limpar
           </button>
+
+          <TranslationPanel sourceText={transcript} />
         </div>
       )}
 

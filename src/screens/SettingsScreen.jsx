@@ -4,12 +4,21 @@ export default function SettingsScreen() {
   const [idioma, setIdioma] = useState("portuguese");
   const [qualidade, setQualidade] = useState("Alto");
 
+  const [engine, setEngine] = useState("local");
+  const [apiKey, setApiKey] = useState("");
+
   useEffect(() => {
     const savedLang = localStorage.getItem("appLanguage");
     if (savedLang) setIdioma(savedLang);
 
     const savedQualidade = localStorage.getItem("appQualidade");
     if (savedQualidade) setQualidade(savedQualidade);
+
+    const savedEngine = localStorage.getItem("translationEngine");
+    if (savedEngine) setEngine(savedEngine);
+
+    const savedApiKey = localStorage.getItem("deepseekApiKey");
+    if (savedApiKey) setApiKey(savedApiKey);
   }, []);
 
   const handleLanguageChange = (e) => {
@@ -22,6 +31,18 @@ export default function SettingsScreen() {
     const novaQualidade = qualidade === "Alto" ? "Médio" : "Alto";
     setQualidade(novaQualidade);
     localStorage.setItem("appQualidade", novaQualidade);
+  };
+
+  const handleEngineChange = (e) => {
+    const newEngine = e.target.value;
+    setEngine(newEngine);
+    localStorage.setItem("translationEngine", newEngine);
+  };
+
+  const handleApiKeyChange = (e) => {
+    const newKey = e.target.value;
+    setApiKey(newKey);
+    localStorage.setItem("deepseekApiKey", newKey);
   };
 
   return (
@@ -52,7 +73,7 @@ export default function SettingsScreen() {
         </select>
       </div>
 
-      <div style={{ marginBottom: 20, textAlign: "left" }}>
+      <div style={{ marginBottom: 30, textAlign: "left" }}>
         <p style={{ fontWeight: "bold", marginBottom: 5 }}>
           Qualidade de Transcrição: {qualidade}
         </p>
@@ -64,6 +85,37 @@ export default function SettingsScreen() {
         <button style={styles.button} onClick={toggleQualidade}>
           ⚙️ Alternar Qualidade
         </button>
+      </div>
+
+      <div style={{ marginBottom: 20, textAlign: "left" }}>
+        <label htmlFor="engine-select" style={{ fontWeight: "bold" }}>
+          Motor de Tradução:
+        </label>
+        <p style={{ fontSize: 12, color: "#666", marginTop: 5 }}>
+          Escolha entre a tradução local no navegador (OPUS-MT) ou via nuvem (DeepSeek API).
+        </p>
+        <select
+          id="engine-select"
+          value={engine}
+          onChange={handleEngineChange}
+          style={{ ...styles.select, width: "100%", marginTop: 10 }}
+        >
+          <option value="local">OPUS-MT (Local no navegador, 100% grátis e offline)</option>
+          <option value="deepseek">DeepSeek API (Nuvem, requer Chave de API)</option>
+        </select>
+
+        {engine === "deepseek" && (
+          <div style={{ marginTop: 15 }}>
+            <label style={{ fontWeight: "bold", fontSize: 14 }}>Chave da API do DeepSeek:</label>
+            <input
+              type="password"
+              placeholder="sk-..."
+              value={apiKey}
+              onChange={handleApiKeyChange}
+              style={{ ...styles.select, width: "100%", marginTop: 5 }}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

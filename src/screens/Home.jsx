@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { transcribeAudio } from "../audioUtils";
 import SaveModal from "../components/SaveModal";
+import TranslationPanel from "../components/TranslationPanel";
 import * as shared from "../styles/sharedStyles";
 import logoImage from "./logo.jpg";
 
@@ -105,6 +106,8 @@ export default function HomeScreen({ navigateTo }) {
               💾 Salvar Transcrição
             </button>
           )}
+
+          {transcription && <TranslationPanel sourceText={transcription} />}
         </div>
       )}
 
