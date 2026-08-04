@@ -4,6 +4,7 @@ import { transcribeAudio } from "../audioUtils";
 import { LANGUAGE_MAP, SUPPORTED_MIME_TYPES, DEFAULT_LANGUAGE } from "../constants";
 import SaveModal from "../components/SaveModal";
 import TranslationPanel from "../components/TranslationPanel";
+import SummaryPanel from "../components/SummaryPanel";
 import * as shared from "../styles/sharedStyles";
 
 function detectSupportedMimeType() {
@@ -270,6 +271,7 @@ export default function RecordScreen() {
           </button>
 
           <TranslationPanel sourceText={transcript} />
+          <SummaryPanel sourceText={transcript} />
         </div>
       )}
 

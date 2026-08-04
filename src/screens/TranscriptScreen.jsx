@@ -3,6 +3,7 @@ import { handleSave as saveTranscript } from "./fileSaver";
 import { LANGUAGE_MAP, DEFAULT_LANGUAGE } from "../constants";
 import SaveModal from "../components/SaveModal";
 import TranslationPanel from "../components/TranslationPanel";
+import SummaryPanel from "../components/SummaryPanel";
 import * as shared from "../styles/sharedStyles";
 
 export default function TranscriptScreen({ route }) {
@@ -124,7 +125,10 @@ export default function TranscriptScreen({ route }) {
       )}
 
       {recognizedText && !isListening && (
-        <TranslationPanel sourceText={recognizedText} />
+        <>
+          <TranslationPanel sourceText={recognizedText} />
+          <SummaryPanel sourceText={recognizedText} />
+        </>
       )}
 
       <SaveModal
