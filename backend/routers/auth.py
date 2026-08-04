@@ -14,7 +14,7 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     if not user or not auth.verify_password(form_data.password, user.get("senha")):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="E-mail ou senha incorretos",
+            detail="Login ou senha incorretos",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
