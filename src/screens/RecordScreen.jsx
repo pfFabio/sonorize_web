@@ -34,6 +34,8 @@ export default function RecordScreen() {
   const audioChunksRef = useRef([]);
   const selectedMimeTypeRef = useRef("audio/webm");
   const isRecordingRef = useRef(false);
+  const accumulatedTranscriptRef = useRef("");
+  const restartTimeoutRef = useRef(null);
 
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   const isSpeechRecognitionSupported = !!SpeechRecognition;
@@ -63,6 +65,7 @@ export default function RecordScreen() {
     setLiveTranscript("");
     setTranscript("");
     setLastRecordingUri(null);
+    accumulatedTranscriptRef.current = "";
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       window.alert("O acesso ao microfone não está disponível neste navegador ou exige conexão segura (HTTPS).");
@@ -90,17 +93,19 @@ export default function RecordScreen() {
 
         stream.getTracks().forEach((track) => track.stop());
 
-        if (!liveTranscript.trim()) {
+        const currentLive = accumulatedTranscriptRef.current.trim();
+        if (!currentLive) {
           handleTranscribeAudioWithAi(audioUrl);
         }
       };
 
-      mediaRecorderRef.current.start();
-      setIsRecording(true);
-      isRecordingRef.current = true;
       if (isSpeechRecognitionSupported) {
         startLiveTranscription();
       }
+
+      mediaRecorderRef.current.start();
+      setIsRecording(true);
+      isRecordingRef.current = true;
     } catch (err) {
       console.error("Erro ao iniciar gravação:", err);
       window.alert("Não foi possível iniciar a gravação. Verifique a permissão do microfone.");
@@ -120,25 +125,34 @@ export default function RecordScreen() {
 
       recognition.onresult = (event) => {
         let interimTranscript = "";
-        let finalTranscript = "";
-        for (let i = 0; i < event.results.length; i++) {
-          const transcriptPiece = event.results[i][0].transcript;
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const piece = event.results[i][0].transcript;
           if (event.results[i].isFinal) {
-            finalTranscript += transcriptPiece;
+            accumulatedTranscriptRef.current += (accumulatedTranscriptRef.current ? " " : "") + piece.trim();
           } else {
-            interimTranscript += transcriptPiece;
+            interimTranscript += piece;
           }
         }
-        setLiveTranscript(finalTranscript + interimTranscript);
+        const combined = (accumulatedTranscriptRef.current + (interimTranscript ? " " + interimTranscript : "")).trim();
+        setLiveTranscript(combined);
+      };
+
+      recognition.onerror = (event) => {
+        console.warn("Aviso de reconhecimento de voz:", event.error);
       };
 
       recognition.onend = () => {
         if (isRecordingRef.current) {
-          try {
-            recognition.start();
-          } catch (e) {
-            // Reinício de voz dispensado silenciosamente
-          }
+          clearTimeout(restartTimeoutRef.current);
+          restartTimeoutRef.current = setTimeout(() => {
+            if (isRecordingRef.current && speechRecognitionRef.current) {
+              try {
+                speechRecognitionRef.current.start();
+              } catch (e) {
+                console.warn("Reinício de voz ignorado:", e);
+              }
+            }
+          }, 200);
         }
       };
 
@@ -150,26 +164,33 @@ export default function RecordScreen() {
   }
 
   function stopLiveTranscription() {
+    clearTimeout(restartTimeoutRef.current);
     if (speechRecognitionRef.current) {
-      speechRecognitionRef.current.stop();
+      try {
+        speechRecognitionRef.current.stop();
+      } catch (e) {}
     }
   }
 
   React.useEffect(() => {
     return () => {
       isRecordingRef.current = false;
+      clearTimeout(restartTimeoutRef.current);
       if (speechRecognitionRef.current) {
-        speechRecognitionRef.current.stop();
+        try {
+          speechRecognitionRef.current.stop();
+        } catch (e) {}
       }
     };
   }, []);
 
   async function stopRecording() {
     isRecordingRef.current = false;
+    stopLiveTranscription();
     if (mediaRecorderRef.current && isRecording) {
-      if (isSpeechRecognitionSupported) {
-        if (liveTranscript) setTranscript(liveTranscript);
-        stopLiveTranscription();
+      const finalLiveText = accumulatedTranscriptRef.current.trim() || liveTranscript.trim();
+      if (finalLiveText) {
+        setTranscript(finalLiveText);
       }
       mediaRecorderRef.current.stop();
       setIsRecording(false);

@@ -12,6 +12,9 @@ export default function TranscriptScreen({ route }) {
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef(null);
   const textAreaRef = useRef(null);
+  const accumulatedTextRef = useRef("");
+  const isListeningRef = useRef(false);
+  const restartTimeoutRef = useRef(null);
 
   const staticTranscription = route.params?.transcription;
 
@@ -36,35 +39,46 @@ export default function TranscriptScreen({ route }) {
 
     recognition.onresult = (event) => {
       let interimTranscript = "";
-      let finalTranscript = "";
-
       for (let i = event.resultIndex; i < event.results.length; ++i) {
+        const piece = event.results[i][0].transcript;
         if (event.results[i].isFinal) {
-          finalTranscript += event.results[i][0].transcript;
+          accumulatedTextRef.current += (accumulatedTextRef.current ? " " : "") + piece.trim();
         } else {
-          interimTranscript += event.results[i][0].transcript;
+          interimTranscript += piece;
         }
       }
-      setRecognizedText((prev) => prev + finalTranscript + interimTranscript);
+      const combined = (accumulatedTextRef.current + (interimTranscript ? " " + interimTranscript : "")).trim();
+      setRecognizedText(combined);
     };
 
     recognition.onerror = (event) => {
-      console.error("Erro de reconhecimento de voz:", event.error);
-      setIsListening(false);
+      console.warn("Aviso de reconhecimento de voz:", event.error);
     };
 
     recognition.onend = () => {
-      if (isListening) {
-        recognition.start();
+      if (isListeningRef.current) {
+        clearTimeout(restartTimeoutRef.current);
+        restartTimeoutRef.current = setTimeout(() => {
+          if (isListeningRef.current && recognitionRef.current) {
+            try {
+              recognitionRef.current.start();
+            } catch (e) {
+              console.warn("Reinício ignorado em TranscriptScreen:", e);
+            }
+          }
+        }, 200);
       }
     };
 
     return () => {
+      clearTimeout(restartTimeoutRef.current);
       if (recognitionRef.current) {
-        recognitionRef.current.stop();
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {}
       }
     };
-  }, [staticTranscription, isListening]);
+  }, [staticTranscription]);
 
   useEffect(() => {
     if (textAreaRef.current) {
@@ -76,8 +90,10 @@ export default function TranscriptScreen({ route }) {
     if (!recognitionRef.current) return;
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true });
+      accumulatedTextRef.current = "";
       setRecognizedText("");
       setIsListening(true);
+      isListeningRef.current = true;
       recognitionRef.current.start();
     } catch (e) {
       console.error("Erro ao iniciar:", e);
@@ -86,9 +102,13 @@ export default function TranscriptScreen({ route }) {
   };
 
   const stopListening = async () => {
+    isListeningRef.current = false;
+    clearTimeout(restartTimeoutRef.current);
+    setIsListening(false);
     if (recognitionRef.current) {
-      setIsListening(false);
-      recognitionRef.current.stop();
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {}
     }
   };
 
